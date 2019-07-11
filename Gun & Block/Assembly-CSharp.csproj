@@ -53,31 +53,27 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\roleMove.cs" />
+     <Compile Include="Assets\Script\Battle\BulletScript.cs" />
+     <Compile Include="Assets\Script\Battle\FieldScript.cs" />
+     <Compile Include="Assets\Script\Battle\RoleScript.cs" />
+     <Compile Include="Assets\Script\ChooseServer\ChooseServerScript.cs" />
+     <Compile Include="Assets\Script\Collection\PrefabCollection.cs" />
      <Compile Include="Assets\Script\CuteUDP\BasePacket.cs" />
      <Compile Include="Assets\Script\CuteUDP\CuteUDP.cs" />
      <Compile Include="Assets\Script\CuteUDP\EventEmitter.cs" />
      <Compile Include="Assets\Script\CuteUDP\MiniPacket.cs" />
      <Compile Include="Assets\Script\CuteUDP\Packet.cs" />
      <Compile Include="Assets\Script\CuteUDP\PacketHeader.cs" />
+     <Compile Include="Assets\Script\CuteUDPEvent.cs" />
      <Compile Include="Assets\Script\CuteUDPManager.cs" />
+     <Compile Include="Assets\Script\Datas\PlayerDataScript.cs" />
      <Compile Include="Assets\Script\Factory\LoginInfo.cs" />
+     <Compile Include="Assets\Script\Factory\RoleState.cs" />
      <Compile Include="Assets\Script\Factory\UserInfo.cs" />
      <Compile Include="Assets\Script\Login\LoginScript.cs" />
-     <Compile Include="Assets\Script\Prefabs\PrefabCollection.cs" />
- <Reference Include="Unity.TextMeshPro.Editor">
- <HintPath>D:/Gun&amp;Block/Gun &amp; Block/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
- </Reference>
  <Reference Include="Unity.PackageManagerUI.Editor">
- <HintPath>D:/Gun&amp;Block/Gun &amp; Block/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
- </Reference>
- <Reference Include="Unity.CollabProxy.Editor">
- <HintPath>D:/Gun&amp;Block/Gun &amp; Block/Library/ScriptAssemblies/Unity.CollabProxy.Editor.dll</HintPath>
- </Reference>
- <Reference Include="Unity.TextMeshPro">
- <HintPath>D:/Gun&amp;Block/Gun &amp; Block/Library/ScriptAssemblies/Unity.TextMeshPro.dll</HintPath>
- </Reference>
- <Reference Include="Unity.Analytics.DataPrivacy">
- <HintPath>D:/Gun&amp;Block/Gun &amp; Block/Library/ScriptAssemblies/Unity.Analytics.DataPrivacy.dll</HintPath>
+ <HintPath>D:/GunAndBlock/Gun &amp; Block/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
  </Reference>
  <Reference Include="UnityEngine.AIModule">
  <HintPath>C:/Program Files/Unity/Hub/Editor/2018.3.14f1/Editor/Data/Managed/UnityEngine/UnityEngine.AIModule.dll</HintPath>
@@ -279,18 +275,6 @@
  </Reference>
  <Reference Include="UnityEngine.SpatialTracking">
  <HintPath>C:/Program Files/Unity/Hub/Editor/2018.3.14f1/Editor/Data/UnityExtensions/Unity/UnitySpatialTracking/RuntimeEditor/UnityEngine.SpatialTracking.dll</HintPath>
- </Reference>
- <Reference Include="Newtonsoft.Json">
- <HintPath>D:/Gun&amp;Block/Gun &amp; Block/Assets/Script/CuteUDP/Newtonsoft.Json.dll</HintPath>
- </Reference>
- <Reference Include="Unity.Analytics.Editor">
- <HintPath>D:/Gun&amp;Block/Gun &amp; Block/Library/PackageCache/com.unity.analytics@3.2.2/Unity.Analytics.Editor.dll</HintPath>
- </Reference>
- <Reference Include="Unity.Analytics.StandardEvents">
- <HintPath>D:/Gun&amp;Block/Gun &amp; Block/Library/PackageCache/com.unity.analytics@3.2.2/Unity.Analytics.StandardEvents.dll</HintPath>
- </Reference>
- <Reference Include="Unity.Analytics.Tracker">
- <HintPath>D:/Gun&amp;Block/Gun &amp; Block/Library/PackageCache/com.unity.analytics@3.2.2/Unity.Analytics.Tracker.dll</HintPath>
  </Reference>
  <Reference Include="netstandard">
  <HintPath>C:/Program Files/Unity/Hub/Editor/2018.3.14f1/Editor/Data/NetStandard/ref/2.0.0/netstandard.dll</HintPath>

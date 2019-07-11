@@ -2,7 +2,7 @@ using System;
 using System.Text;
 using System.Net;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using UnityEngine;
 
 namespace CuteUDPApp {
     // CuteContent 就是一个包对象
@@ -75,7 +75,7 @@ namespace CuteUDPApp {
 
             this.packetHeader = new PacketHeader(this.eventName, this.packetCount, this.packetStringSize);
 
-            string sendStr = JsonConvert.SerializeObject(this.packetHeader);
+            string sendStr = JsonUtility.ToJson(this.packetHeader);
 
             byte[] packetCodeBytes = Encoding.UTF8.GetBytes("0");
 
@@ -115,55 +115,28 @@ namespace CuteUDPApp {
 
             this.packetStringSize = orginStr.Length;
 
-            if (CuteUDP.toPlatForm == EnumPlatForm.Node) {
+            int i = 0;
 
-                int i = 0;
+            // 若包大于0，重复，直至分包结束
+            while (i < n) {
 
-                // 若包大于0，重复，直至分包结束
-                while (i < n) {
+                int p = (perLength > len) ? len : perLength;
 
-                    int p = (perLength > len) ? len : perLength;
+                string s = this.orginStr.Substring(index, p);
 
-                    string s = this.orginStr.Substring(index, p);
+                string sendStr = JsonUtility.ToJson(new MiniPacket(i, s));
 
-                    string sendStr = JsonConvert.SerializeObject(new MiniPacket(i, s));
+                byte[] packetCodeBytes = Encoding.UTF8.GetBytes("2");
+                
+                byte[] sendBytes = Encoding.UTF8.GetBytes(sendStr);
 
-                    byte[] packetCodeBytes = Encoding.UTF8.GetBytes("2");
-                    
-                    byte[] sendBytes = Encoding.UTF8.GetBytes(sendStr);
+                miniPacketList.Add(concatBytes(packetCodeBytes, sendBytes)); // 从最后一个开始打包
 
-                    miniPacketList.Add(concatBytes(packetCodeBytes, sendBytes)); // 从最后一个开始打包
+                index += perLength;
 
-                    index += perLength;
+                len -= perLength;
 
-                    len -= perLength;
-
-                    i += 1;
-                }
-
-            } else {
-
-                // 若包大于0，重复，直至分包结束
-                while (n > 0) {
-
-                    int p = (perLength > len) ? len : perLength;
-
-                    string s = this.orginStr.Substring(index, p);
-
-                    string sendStr = JsonConvert.SerializeObject(new MiniPacket(n - 1, s));
-
-                    byte[] packetCodeBytes = Encoding.UTF8.GetBytes("2");
-                    
-                    byte[] sendBytes = Encoding.UTF8.GetBytes(sendStr);
-
-                    miniPacketList.Add(concatBytes(packetCodeBytes, sendBytes)); // 从最后一个开始打包
-
-                    index += perLength;
-
-                    len -= perLength;
-
-                    n -= 1;
-                }
+                i += 1;
             }
         }
     }

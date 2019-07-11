@@ -12,6 +12,9 @@ EditorBuildSettings:
     path: Assets/Scenes/Title.unity
     guid: a4ae82b0812aa34459a7a9a02df04b50
   - enabled: 1
+    path: Assets/Scenes/ChooseServer.unity
+    guid: 55e432984cd95374796b7b3751fbecc9
+  - enabled: 1
     path: Assets/Scenes/BattleField.unity
     guid: cc0af71c6a306144a9cb715b4e48c386
   m_configObjects: {}

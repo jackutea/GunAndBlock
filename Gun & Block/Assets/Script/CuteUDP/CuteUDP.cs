@@ -7,14 +7,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 using UnityEngine;
 
 namespace CuteUDPApp {
-    public enum EnumPlatForm {
-        Node = 0,
-        CSharp = 1,
-    }
+
     // 逻辑：
     // 1.提交要发送的 "包"
     // 2.把 "包内容" 拆成 "小包组"
@@ -45,7 +41,6 @@ namespace CuteUDPApp {
         public double nowTimeSample; // 当前时间
         int repeatHeaderTimeMs; // 包头 重发延时
         int repeatMiniTimeMs; // 每个小包 重发延时 (默认为 0)
-        public static EnumPlatForm toPlatForm;
         public static int count = -1; // 包头自增计数
 
         // 发送
@@ -55,9 +50,9 @@ namespace CuteUDPApp {
         Dictionary<string, Dictionary<int, BasePacket>> recvDic; // 待收数据列表
 
         // CuteUDP 构造方法
-        public CuteUDP(string remoteIp, int _remotePort, int _localPort, EnumPlatForm _platform = 0) {
+        public CuteUDP(string remoteIp, int _remotePort, int _localPort) {
 
-            initConfig(_platform);
+            initConfig();
 
             initSocket(remoteIp, _remotePort, _localPort);
 
@@ -65,10 +60,18 @@ namespace CuteUDPApp {
 
             emitServer("connectOnce", "Hello World!");
 
+            if (Thread.CurrentThread.Name == null) {
+
+                Thread.CurrentThread.Name = "CuteMainThread";
+
+            }
+
+            Debug.Log("CuteUDP 构造时线程 ：" + Thread.CurrentThread.Name);
+
         }
 
         // 初始化 CuteUDP 配置
-        void initConfig(EnumPlatForm _platform) {
+        void initConfig() {
 
             abortTimeMs = 3000;
 
@@ -77,8 +80,6 @@ namespace CuteUDPApp {
             repeatHeaderTimeMs = 10; // 包头 重发延时
 
             repeatMiniTimeMs = 5; // 每个小包 重发延时 (默认为 0)
-
-            toPlatForm = _platform; // 发往平台
 
             appRuning = true;
 
@@ -111,10 +112,14 @@ namespace CuteUDPApp {
 
             // 创建一个独立的发送线程
             sendThread = new Thread(new ThreadStart(recvUpdating));
+
+            sendThread.Name = "recvThread";
             
             sendThread.Start();
 
             recvThread = new Thread(new ThreadStart(sendUpdating));
+
+            recvThread.Name = "sendThread";
 
             recvThread.Start();
 
@@ -132,7 +137,7 @@ namespace CuteUDPApp {
 
             Packet packet = new Packet(eventName, obj, ip, port);
 
-            if (!sendDic[ip].ContainsKey(packet.packetHeader.i)) {
+            if (sendDic[ip] == null || !sendDic[ip].ContainsKey(packet.packetHeader.i)) {
 
                 // 添加包到队末
                 sendDic[ip].Add(packet.packetHeader.i, packet);
@@ -181,7 +186,7 @@ namespace CuteUDPApp {
                 case "3" : stateString = "小包序号确认"; break;
                 case "4" : stateString = "小包齐全确认"; break;
                 case "5" : stateString = "弃发申请"; break;
-                default : break;
+                default : Debug.Log(stateString); break;
             }
 
             // Debug.Log("发送反馈码：" + stateCode + "状态：" + stateString + "内容：" + obj.ToString());
@@ -372,6 +377,8 @@ namespace CuteUDPApp {
         // 监听事件
         void eventListening() {
 
+            // Debug.Log("监听事件的线程是" + Thread.CurrentThread.Name);
+
             on<string, string, int>("connectOnce", onConnenctOnce);
 
             on<string, string, int>("addHeader", addHeader);
@@ -399,7 +406,7 @@ namespace CuteUDPApp {
 
             double t1 = nowTimeSample;
 
-            PacketHeader packetHeader = JsonConvert.DeserializeObject<PacketHeader>(dataString);
+            PacketHeader packetHeader = JsonUtility.FromJson<PacketHeader>(dataString);
 
             if (!recvDic.ContainsKey(ip)) {
 
@@ -486,7 +493,7 @@ namespace CuteUDPApp {
         void jointPacket(string dataString, string ip, int port) {
 
             // 接收到的小包字符串转码成 MiniPacket
-            MiniPacket minipacket =  JsonConvert.DeserializeObject<MiniPacket>(dataString);
+            MiniPacket minipacket =  JsonUtility.FromJson<MiniPacket>(dataString);
 
             // 发送确认收到小包序号
             responseState("3", minipacket.i, ip, port);
@@ -539,7 +546,7 @@ namespace CuteUDPApp {
                         // 触发自定义事件
                         invokeEvent<string, string, int>(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, ip, port);
 
-                        Debug.LogAssertion("触发事件" + currentBasePacket.packetHeader.n + " : " + currentBasePacket.fullStr);
+                        // Debug.LogAssertion("触发事件" + currentBasePacket.packetHeader.n + " : " + currentBasePacket.fullStr);
 
                         // 触发完删除旧包头
                         recvDic[ip].Remove(currentBasePacket.packetHeader.i);
@@ -619,6 +626,12 @@ namespace CuteUDPApp {
         public void quitCuteUDP() {
 
             appRuning = false;
+
+            if (Thread.CurrentThread.Name == "CuteMainThread") {
+
+                Thread.CurrentThread.Abort();
+
+            }
 
             sendThread.Abort();
 

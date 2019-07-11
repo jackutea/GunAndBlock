@@ -12,17 +12,53 @@ module.exports = {
 
         let password = UserInfo.password;
 
-        let findObj = {username : username, password : password};
+        let usernameobj = {username : username};
+
+        let obj = {username : username, password : password};
 
         console.log("login");
 
-        mongoDB.find("account", findObj, (err, result) => {
+        mongoDB.findOne("account", usernameobj, (err, result) => {
 
             if (err) throw err;
 
-            console.log(result);
+            if (!result) {
 
+                // console.log(username, "用户名不存在");
+
+                // let loginInfo = new LoginInfo(2, "用户名不存在");
+
+                // this.emitTo("loginCheck", JSON.stringify(loginInfo), remoteIpString, remotePort);
+
+                mongoDB.insertOne("account", obj, (err, result) => {
+
+                    let loginInfo = new LoginInfo(0, "注册成功，直接登录");
+
+                    this.emitTo("loginCheck", JSON.stringify(loginInfo), remoteIpString, remotePort);
+
+                });
+
+            } else {
+
+                if (result.password == password) {
+
+                    console.log(username, "已存在，直接登录");
+
+                    let loginInfo = new LoginInfo(0, "登录成功");
+
+                    this.emitTo("loginCheck", JSON.stringify(loginInfo), remoteIpString, remotePort);
+
+                } else {
+
+                    console.log(username, "密码错误");
+
+                    let loginInfo = new LoginInfo(1, "密码错误");
+
+                    this.emitTo("loginCheck", JSON.stringify(loginInfo), remoteIpString, remotePort);
+
+                }
+                
+            }
         });
-        
     }
 }
