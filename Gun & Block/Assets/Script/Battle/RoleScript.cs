@@ -398,6 +398,8 @@ public class RoleScript : MonoBehaviour {
 
             bs.shootSpeed *= 1.1f;
 
+            bs.gameObject.tag = (col.tag == "LeftAllyBullet") ? "RightAllyBullet" : "LeftAllyBullet";
+
         } else if (roleState.isBlocking && !roleState.isPerfectBlocking) {
 
             roleState.blockLife -= 1;

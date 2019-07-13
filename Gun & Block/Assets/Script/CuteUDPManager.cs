@@ -10,10 +10,9 @@ using UnityEngine.UI;
 public class CuteUDPManager : MonoBehaviour {
     public static CuteUDPManager instance;
     public static CuteUDP cuteUDP;
-    public volatile static Queue<Action<string, string, int>> actionQueue = new Queue<Action<string, string, int>>();
+    public volatile static Queue<Action<string, string>> actionQueue = new Queue<Action<string, string>>();
     public volatile static Queue<string> actionParam1 = new Queue<string>();
     public volatile static Queue<string> actionParam2 = new Queue<string>();
-    public volatile static Queue<int> actionParam3 = new Queue<int>();
 
     void Awake() {
 
@@ -37,31 +36,31 @@ public class CuteUDPManager : MonoBehaviour {
 
         if (actionQueue.Count > 0) {
 
-            Action<string, string, int> act = actionQueue.Dequeue();
+            Action<string, string> act = actionQueue.Dequeue();
 
             string dataString = actionParam1.Dequeue();
 
             string remoteIp = actionParam2.Dequeue();
 
-            int remotePort = actionParam3.Dequeue();
-
-            act.Invoke(dataString, remoteIp, remotePort);
+            act.Invoke(dataString, remoteIp);
 
         }
     }
 
     void initPrivateVoid() {
 
-        cuteUDP.on<string, string, int>("loginCheck", (string dataString, string remoteIp, int remotePort) => {
-            Action<string, string, int> act = CuteUDPEvent.onLoginCheck;
+        cuteUDP.on<string, string>("loginCheck", (string dataString, string remoteIp) => {
+
+            Action<string, string> act = CuteUDPEvent.onLoginCheck;
+            
             actionQueue.Enqueue(act);
+            
             actionParam1.Enqueue(dataString);
+            
             actionParam2.Enqueue(remoteIp);
-            actionParam3.Enqueue(remotePort);
+        
         });
     }
-
-    
 
     void OnApplicationQuit() {
 

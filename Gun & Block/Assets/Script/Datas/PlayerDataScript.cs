@@ -4,8 +4,6 @@ using UnityEngine;
 
 public class PlayerDataScript {
 
-    public static GameObject ROLE_INSTANCE;
-    
     public static string USER_NAME;
     
 }

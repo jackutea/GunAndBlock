@@ -7,6 +7,11 @@ class LoginInfo {
         this.stateCode = stateCode;
 
         this.msg = msg;
+
+        this.serverIdList = [];
+
+        this.serverUserCount = [];
+
     }
 }
 

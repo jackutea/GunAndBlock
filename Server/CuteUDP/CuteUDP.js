@@ -183,6 +183,9 @@ class CuteUDP extends event {
     // 初次连接
     onConnectOnce(dataString, remoteIp, remotePort) {
 
+        // 增加 IP / Port 键值对
+        this.ipPortJson[remoteIp] = remotePort;
+
         console.log("Msg :", dataString, "; From ", remoteIp, ":", remotePort);
 
     }
@@ -190,7 +193,11 @@ class CuteUDP extends event {
     // 向单体发消息（发包头）
     emitTo(eventName, objStr, ipStr, port) {
 
-        if (port === undefined) port = this.remotePort;
+        if (port === undefined) {
+
+            port = (this.ipPortJson[ipStr]) ? this.ipPortJson[ipStr] : this.remotePort;
+
+        } 
 
         let sendJson = this.sendJson;
 
@@ -520,7 +527,7 @@ class CuteUDP extends event {
     // 异步，发小包的回调
     sendMiniCallBack(data) {
 
-        console.log("已发小包：", data.toString());
+        // console.log("已发小包：", data.toString());
 
     }
 

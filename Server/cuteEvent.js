@@ -1,5 +1,8 @@
 var LoginInfo = require("./Factory/LoginInfo");
+var RoleState = require("./Factory/RoleState");
 var mongoDB = require("./mongoDB/mongoDB");
+
+var GD = require("./Datas/GD");
 
 module.exports = {
 
@@ -14,8 +17,6 @@ module.exports = {
 
         let usernameobj = {username : username};
 
-        let obj = {username : username, password : password};
-
         console.log("login");
 
         mongoDB.findOne("account", usernameobj, (err, result) => {
@@ -24,27 +25,49 @@ module.exports = {
 
             if (!result) {
 
-                // console.log(username, "用户名不存在");
+                console.log(username, "用户名不存在");
 
-                // let loginInfo = new LoginInfo(2, "用户名不存在");
+                let loginInfo = new LoginInfo(2, "用户名不存在");
 
-                // this.emitTo("loginCheck", JSON.stringify(loginInfo), remoteIpString, remotePort);
+                this.emitTo("loginCheck", JSON.stringify(loginInfo), remoteIpString, remotePort);
 
-                mongoDB.insertOne("account", obj, (err, result) => {
+                // let obj = {username : username, password : password};
 
-                    let loginInfo = new LoginInfo(0, "注册成功，直接登录");
+                // mongoDB.insertOne("account", obj, (err, result) => {
 
-                    this.emitTo("loginCheck", JSON.stringify(loginInfo), remoteIpString, remotePort);
+                //     let loginInfo = new LoginInfo(0, "注册成功，直接登录");
 
-                });
+                //     this.emitTo("loginCheck", JSON.stringify(loginInfo), remoteIpString, remotePort);
+
+                // });
 
             } else {
 
                 if (result.password == password) {
 
-                    console.log(username, "已存在，直接登录");
+                    // console.log(username, "已存在，直接登录");
+
+                    let roleState = new RoleState();
+
+                    roleState.username = username;
+
+                    roleState.ip = remoteIpString;
+
+                    roleState.port = remotePort;
+
+                    GD.ONLINE_USERS[remoteIpString] = roleState; // 添加玩家信息
 
                     let loginInfo = new LoginInfo(0, "登录成功");
+
+                    for (let serverId in GD.SERVER_LIST) {
+
+                        let serverInfo = GD.SERVER_LIST[serverId];
+
+                        loginInfo.serverIdList.push(serverInfo.serverId);
+
+                        loginInfo.serverUserCount.push(serverInfo.getOnlineUserCount());
+
+                    }
 
                     this.emitTo("loginCheck", JSON.stringify(loginInfo), remoteIpString, remotePort);
 

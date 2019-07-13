@@ -68,8 +68,10 @@
      <Compile Include="Assets\Script\CuteUDPEvent.cs" />
      <Compile Include="Assets\Script\CuteUDPManager.cs" />
      <Compile Include="Assets\Script\Datas\PlayerDataScript.cs" />
+     <Compile Include="Assets\Script\Datas\ServerDataScript.cs" />
      <Compile Include="Assets\Script\Factory\LoginInfo.cs" />
      <Compile Include="Assets\Script\Factory\RoleState.cs" />
+     <Compile Include="Assets\Script\Factory\ServerInfo.cs" />
      <Compile Include="Assets\Script\Factory\UserInfo.cs" />
      <Compile Include="Assets\Script\Login\LoginScript.cs" />
  <Reference Include="Unity.PackageManagerUI.Editor">

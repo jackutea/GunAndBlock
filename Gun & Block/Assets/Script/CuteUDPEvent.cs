@@ -10,20 +10,35 @@ class CuteUDPEvent : MonoBehaviour {
     
     // 接收登录信息 dataString : LoginInfo {stateCode : stateCode, msg : msg }
     // 0 成功 1密码错 2用户名错 3其他
-    public static void onLoginCheck(string dataString, string remoteIp, int remotePort) {
+    public static void onLoginCheck(string dataString, string remoteIp) {
 
-        LoginInfo li = JsonUtility.FromJson<LoginInfo>(dataString);
+        ServerDataScript.LOGIN_INFO = JsonUtility.FromJson<LoginInfo>(dataString);
 
-        if (li.stateCode == 0) {
+        LoginInfo loginInfo = ServerDataScript.LOGIN_INFO;
 
-            showAlertWindow(li.msg);
+        if (loginInfo.stateCode == 0) {
+
+            showAlertWindow(loginInfo.msg);
+
+            for (int i = 0; i < loginInfo.serverIdList.Length; i += 1) {
+
+                int serverName = loginInfo.serverIdList[i];
+
+                int serverUserCount = loginInfo.serverUserCount[i];
+
+                Debug.Log(serverName);
+
+                Debug.Log(serverUserCount);
+
+            }
 
             // SceneManager.LoadScene("ChooseServer");
+
             SceneManager.LoadScene("BattleField");
 
         } else {
 
-            showAlertWindow(li.msg);
+            showAlertWindow(loginInfo.msg);
 
         }
     }
