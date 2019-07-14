@@ -20,7 +20,7 @@ public class CuteUDPManager : MonoBehaviour {
 
         DontDestroyOnLoad(this);
 
-        cuteUDP = new CuteUDP("127.0.0.1", 11000, 10000);
+        cuteUDP = new CuteUDP("127.0.0.1", 11000, 9999);
 
         initPrivateVoid();
 

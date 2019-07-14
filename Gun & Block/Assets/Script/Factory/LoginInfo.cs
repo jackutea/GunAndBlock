@@ -7,7 +7,7 @@ class LoginInfo {
     public int stateCode;
     public string msg;
     public int[] serverIdList;
-    public int[] serverUserCount;
+    public int[] serverUserCountList;
 
     public LoginInfo(int stateCode, string msg) {
 

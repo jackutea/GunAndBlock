@@ -10,7 +10,7 @@ class LoginInfo {
 
         this.serverIdList = [];
 
-        this.serverUserCount = [];
+        this.serverUserCountList = [];
 
     }
 }

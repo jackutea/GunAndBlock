@@ -197,7 +197,7 @@ class CuteUDP extends event {
 
             port = (this.ipPortJson[ipStr]) ? this.ipPortJson[ipStr] : this.remotePort;
 
-        } 
+        }
 
         let sendJson = this.sendJson;
 
@@ -213,7 +213,7 @@ class CuteUDP extends event {
 
             this.socket.send(packet.headerBytes, 0, packet.headerBytes.length, this.remotePort, packet.toIp, this.sendHeaderCallBack(packet.packetHeader.i));
 
-            console.log("正在发送：", objStr, " 至", ipStr, "的", eventName);
+            console.log("正在发送：", objStr, " 至", ipStr, ":", port, "的", eventName);
 
         }
     }

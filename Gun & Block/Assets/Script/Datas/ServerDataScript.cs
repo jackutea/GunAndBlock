@@ -4,6 +4,9 @@ using UnityEngine;
 
 class ServerDataScript {
 
-    public static LoginInfo LOGIN_INFO;
-    
+    public static int[] serverIdList;
+
+    public static int[] serverUserCountList;
+
+    public static int choosenServerId;
 }

@@ -8,7 +8,7 @@ class PrefabCollection : MonoBehaviour {
     public static PrefabCollection instance;
     public GameObject alertWindow;
 
-    // public GameObject server
+    public GameObject serverPanelPrefab;
 
     public GameObject rolePrefab;
     public GameObject bulletPrefab;

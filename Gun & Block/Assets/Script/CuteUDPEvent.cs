@@ -12,29 +12,23 @@ class CuteUDPEvent : MonoBehaviour {
     // 0 成功 1密码错 2用户名错 3其他
     public static void onLoginCheck(string dataString, string remoteIp) {
 
-        ServerDataScript.LOGIN_INFO = JsonUtility.FromJson<LoginInfo>(dataString);
+        LoginInfo loginInfo = JsonUtility.FromJson<LoginInfo>(dataString);
 
-        LoginInfo loginInfo = ServerDataScript.LOGIN_INFO;
+        Debug.Log(loginInfo.msg);
 
         if (loginInfo.stateCode == 0) {
 
             showAlertWindow(loginInfo.msg);
 
-            for (int i = 0; i < loginInfo.serverIdList.Length; i += 1) {
+            ServerDataScript.serverIdList = loginInfo.serverIdList;
 
-                int serverName = loginInfo.serverIdList[i];
+            ServerDataScript.serverUserCountList = loginInfo.serverUserCountList;
 
-                int serverUserCount = loginInfo.serverUserCount[i];
+            // Debug.LogWarning(loginInfo.serverUserCountList.Length);
 
-                Debug.Log(serverName);
+            SceneManager.LoadScene("ChooseServer");
 
-                Debug.Log(serverUserCount);
-
-            }
-
-            // SceneManager.LoadScene("ChooseServer");
-
-            SceneManager.LoadScene("BattleField");
+            // SceneManager.LoadScene("BattleField");
 
         } else {
 

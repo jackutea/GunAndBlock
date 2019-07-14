@@ -191,5 +191,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 6873953054054789049, guid: 77deb79fc93ed9842a0afda9e2c3239d,
         type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: serverPanelPrefab
+      value: 
+      objectReference: {fileID: 9152622300486942880, guid: 6b8ad737712ddf643af09d54160b0172,
+        type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bced0211b2526c142be05bcc250500d4, type: 3}

@@ -105,12 +105,12 @@ namespace CuteUDPApp {
 
             remotePort = _remotePort; // 远程端口
 
-            recvIpEndPoint = new IPEndPoint(IPAddress.Any, localPort);
-
             recvEndPoint = (EndPoint)new IPEndPoint(IPAddress.Any, 0);
 
-            // 创建 Socket 类型为 UDP（当然的~）
+            // 创建 Socket
             try {
+
+                recvIpEndPoint = new IPEndPoint(IPAddress.Any, localPort);
 
                 socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
@@ -120,6 +120,17 @@ namespace CuteUDPApp {
             } catch (Exception ex) {
 
                 string msg = ex.Message;
+
+                socket.Close();
+
+                localPort += 1;
+
+                recvIpEndPoint = new IPEndPoint(IPAddress.Any, localPort);
+
+                socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+
+                // Socket 绑定本地端口
+                socket.Bind(recvIpEndPoint);
 
                 Debug.Log(msg);
 
@@ -754,11 +765,13 @@ namespace CuteUDPApp {
         }
 
         // 处理字典的私有方法（不重要）
-        Packet getCurrentPacket(string ip) {
+        Packet getCurrentPacket(string _ip) {
 
-            if (ip == "" || ip == null) return null;
+            if (_ip == "" || _ip == null) return null;
 
-            Dictionary<int, Packet> packetValueDic = sendDic[ip];
+            if (!sendDic.ContainsKey(_ip)) return null;
+
+            Dictionary<int, Packet> packetValueDic = sendDic[_ip];
 
             if (packetValueDic == null) return null;
 
@@ -769,15 +782,19 @@ namespace CuteUDPApp {
             int[] ik = new int[packetValueDic.Keys.Count];
 
             packetValueDic.Keys.CopyTo(ik, 0);
+
+            if (!packetValueDic.ContainsKey(ik[0])) return null;
 
             return packetValueDic[ik[0]];
         }
 
-        BasePacket getCurrentBasePacket(string ip) {
+        BasePacket getCurrentBasePacket(string _ip) {
 
-            if (ip == "" || ip == null) return null;
+            if (_ip == "" || _ip == null) return null;
 
-            Dictionary<int, BasePacket> packetValueDic = recvDic[ip];
+            if (!recvDic.ContainsKey(_ip)) return null;
+
+            Dictionary<int, BasePacket> packetValueDic = recvDic[_ip];
 
             if (packetValueDic == null) return null;
 
@@ -788,6 +805,8 @@ namespace CuteUDPApp {
             int[] ik = new int[packetValueDic.Keys.Count];
 
             packetValueDic.Keys.CopyTo(ik, 0);
+
+            if (!packetValueDic.ContainsKey(ik[0])) return null;
 
             return packetValueDic[ik[0]];
         }

@@ -65,7 +65,7 @@ module.exports = {
 
                         loginInfo.serverIdList.push(serverInfo.serverId);
 
-                        loginInfo.serverUserCount.push(serverInfo.getOnlineUserCount());
+                        loginInfo.serverUserCountList.push(serverInfo.getOnlineUserCount());
 
                     }
 

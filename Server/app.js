@@ -4,7 +4,7 @@ var GD = require("./Datas/GD");
 var ServerInfo = require("./Factory/ServerInfo");
 var RoomInfo = require("./Factory/RoomInfo");
 
-var cuteUDP = new CuteUDP("127.0.0.1", 11000, 10000);
+var cuteUDP = new CuteUDP("127.0.0.1", 9999, 11000);
 
 // console.log(cuteUDP);
 
