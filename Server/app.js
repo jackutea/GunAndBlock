@@ -1,24 +1,33 @@
 var CuteUDP = require("./CuteUDP/CuteUDP");
 var cuteEvent = require("./cuteEvent");
 var GD = require("./Datas/GD");
-var ServerInfo = require("./Factory/ServerInfo");
-var RoomInfo = require("./Factory/RoomInfo");
+var ClassFactory = require("./Factory/ClassFactory");
 
-var cuteUDP = new CuteUDP("127.0.0.1", 9999, 11000);
+var cuteUDP = new CuteUDP("127.0.0.1", 9999, 10000);
+
+// TODO :
+// 1. 匹配系统
+// 2. 人物反馈（血条反馈、攻击反馈、格挡反馈、完美格挡反馈）
+// 3. Ping功能
+// 4. 水晶
 
 // console.log(cuteUDP);
 
-cuteUDP.on("login", cuteEvent.login);
+cuteUDP.on("Login", cuteEvent.login);
 
-// 开服 2 个
-for (let i = 0; i < 2; i += 1) {
+cuteUDP.on("Register", cuteEvent.register);
 
-    let serverInfo = new ServerInfo();
+cuteUDP.on("ShowRoom", cuteEvent.showRoom);
 
-    // 开官方房间 每服务器3个
-    for (let o = 0; o < 3; o += 1) {
+// 开服 1 个
+for (let i = 0; i < 1; i += 1) {
 
-        let roomInfo = new RoomInfo();
+    let serverInfo = new ClassFactory.ServerInfo();
+
+    // 开官方房间 每服务器0个
+    for (let o = 0; o < 0; o += 1) {
+
+        let roomInfo = new ClassFactory.RoomInfo();
 
         serverInfo.roomJson[roomInfo.roomId] = roomInfo;
 

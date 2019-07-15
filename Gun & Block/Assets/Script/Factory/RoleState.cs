@@ -1,13 +1,19 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[Serializable]
 public class RoleState{
     public string username;
+    public string roleName;
+    public int level = 1;
+    public int exp = 0;
+    public int score = 0;
     public bool isLeftAlly = true;
-    public int life = 5;
-    public int blockLife = 3;
-    public int damage = 1;
+    public float life = 5;
+    public float blockLife = 3;
+    public float damage = 1;
     public float shootGapOrigin = 1f;
     public float shootGap = 0;
     public float blockGapOrigin = 0.5f;

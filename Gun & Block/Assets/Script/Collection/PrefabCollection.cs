@@ -6,12 +6,11 @@ using UnityEngine.SceneManagement;
 class PrefabCollection : MonoBehaviour {
 
     public static PrefabCollection instance;
-    public GameObject alertWindow;
+    public GameObject alertWindow = null;
 
-    public GameObject serverPanelPrefab;
-
-    public GameObject rolePrefab;
-    public GameObject bulletPrefab;
+    public GameObject serverPanelPrefab = null;
+    public GameObject rolePrefab = null;
+    public GameObject bulletPrefab = null;
 
     
 

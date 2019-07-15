@@ -10,31 +10,33 @@ class CuteUDPEvent : MonoBehaviour {
     
     // 接收登录信息 dataString : LoginInfo {stateCode : stateCode, msg : msg }
     // 0 成功 1密码错 2用户名错 3其他
-    public static void onLoginCheck(string dataString, string remoteIp) {
+    public static void onLoginRecv(string dataString, string remoteIp) {
 
-        LoginInfo loginInfo = JsonUtility.FromJson<LoginInfo>(dataString);
+        LoginRecvInfo loginRecvInfo = JsonUtility.FromJson<LoginRecvInfo>(dataString);
 
-        Debug.Log(loginInfo.msg);
+        if (loginRecvInfo.stateCode == 0) {
 
-        if (loginInfo.stateCode == 0) {
+            showAlertWindow(loginRecvInfo.msg);
 
-            showAlertWindow(loginInfo.msg);
+            ServerDataScript.serverIdList = loginRecvInfo.serverIdList;
 
-            ServerDataScript.serverIdList = loginInfo.serverIdList;
-
-            ServerDataScript.serverUserCountList = loginInfo.serverUserCountList;
-
-            // Debug.LogWarning(loginInfo.serverUserCountList.Length);
+            ServerDataScript.serverUserCountList = loginRecvInfo.serverUserCountList;
 
             SceneManager.LoadScene("ChooseServer");
 
-            // SceneManager.LoadScene("BattleField");
+            // SceneManager.LoadScene("Field");
 
         } else {
 
-            showAlertWindow(loginInfo.msg);
+            showAlertWindow(loginRecvInfo.msg);
 
         }
+    }
+
+    // 接收服务器房间信息回传
+    public static void onShowRoomRecv(string dataString, string remoteIp) {
+
+
     }
 
     // 弹窗信息

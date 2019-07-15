@@ -131,7 +131,7 @@ class CuteUDP extends event {
                     if (timeGap % this.repeatHeaderTimeMs == 0) {
     
                         // 隔一段时间 发送包头
-                        this.socket.send(currentPacket.headerBytes, 0, currentPacket.headerBytes.length, this.remotePort, currentPacket.toIp, this.sendHeaderCallBack(currentPacket.packetHeader.i));
+                        this.socket.send(currentPacket.headerBytes, 0, currentPacket.headerBytes.length, currentPacket.toPort, currentPacket.toIp, this.sendHeaderCallBack(currentPacket.packetHeader.i));
         
                     }
                 }
@@ -211,7 +211,7 @@ class CuteUDP extends event {
 
             sendJson[ipStr][packet.packetHeader.i] = packet;
 
-            this.socket.send(packet.headerBytes, 0, packet.headerBytes.length, this.remotePort, packet.toIp, this.sendHeaderCallBack(packet.packetHeader.i));
+            this.socket.send(packet.headerBytes, 0, packet.headerBytes.length, packet.toPort, packet.toIp, this.sendHeaderCallBack(packet.packetHeader.i));
 
             console.log("正在发送：", objStr, " 至", ipStr, ":", port, "的", eventName);
 
@@ -251,7 +251,7 @@ class CuteUDP extends event {
     // 0 收到新包头
     addHeader(dataString, ipStr, ipPort) {
 
-        console.log("收到反馈码 0 新包头 id: ", dataString);
+        console.log("收到反馈码 0 新包头 id: ", dataString, "来自", ipStr, ":", ipPort);
 
         let packetHeader = JSON.parse(dataString);
 
@@ -261,9 +261,9 @@ class CuteUDP extends event {
 
             recvJson[ipStr] = new Object();
             
-            this.ipPortJson[ipStr] = ipPort;
-
         }
+
+        this.ipPortJson[ipStr] = ipPort;
 
         let basePacket = new BasePacket(packetHeader, ipStr, ipPort);
 

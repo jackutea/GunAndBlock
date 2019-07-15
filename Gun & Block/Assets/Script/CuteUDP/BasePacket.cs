@@ -1,6 +1,7 @@
 using System;
 
 namespace CuteUDPApp {
+    [Serializable]
     public class BasePacket {
         public PacketHeader packetHeader;
         public double recvTimeSample;

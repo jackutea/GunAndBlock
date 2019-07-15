@@ -1,10 +1,12 @@
+using System;
 
-class UserInfo {
+[Serializable]
+class UserSendInfo {
 
     public string username;
     public string password;
 
-    public UserInfo(string username, string password) {
+    public UserSendInfo(string username, string password) {
 
         this.username = username;
 

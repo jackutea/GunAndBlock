@@ -9,12 +9,18 @@ EditorBuildSettings:
     path: Assets/Scenes/InitGame.unity
     guid: 49561702dc22a04408f5a7ff4a3128b0
   - enabled: 1
-    path: Assets/Scenes/Title.unity
+    path: Assets/Scenes/Login.unity
     guid: a4ae82b0812aa34459a7a9a02df04b50
   - enabled: 1
     path: Assets/Scenes/ChooseServer.unity
     guid: 55e432984cd95374796b7b3751fbecc9
   - enabled: 1
-    path: Assets/Scenes/BattleField.unity
+    path: Assets/Scenes/Home.unity
+    guid: 597661196661e0d45900685187f4ec5c
+  - enabled: 1
+    path: Assets/Scenes/ChooseRoom.unity
+    guid: 065299518a15eba4099b830c257765a7
+  - enabled: 1
+    path: Assets/Scenes/Field.unity
     guid: cc0af71c6a306144a9cb715b4e48c386
   m_configObjects: {}

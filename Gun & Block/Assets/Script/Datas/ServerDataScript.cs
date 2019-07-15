@@ -8,5 +8,5 @@ class ServerDataScript {
 
     public static int[] serverUserCountList;
 
-    public static int choosenServerId;
+    public static int choosenServerId = -1;
 }

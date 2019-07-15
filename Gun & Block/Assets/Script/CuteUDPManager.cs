@@ -20,7 +20,7 @@ public class CuteUDPManager : MonoBehaviour {
 
         DontDestroyOnLoad(this);
 
-        cuteUDP = new CuteUDP("127.0.0.1", 11000, 9999);
+        cuteUDP = new CuteUDP("127.0.0.1", 10000, 11000);
 
         initPrivateVoid();
 
@@ -30,7 +30,7 @@ public class CuteUDPManager : MonoBehaviour {
 
         if (SceneManager.GetActiveScene().name == "InitGame") {
 
-            SceneManager.LoadScene("Title");
+            SceneManager.LoadScene("Login");
             
         }
 
@@ -49,9 +49,9 @@ public class CuteUDPManager : MonoBehaviour {
 
     void initPrivateVoid() {
 
-        cuteUDP.on<string, string>("loginCheck", (string dataString, string remoteIp) => {
+        cuteUDP.on<string, string>("LoginRecv", (string dataString, string remoteIp) => {
 
-            Action<string, string> act = CuteUDPEvent.onLoginCheck;
+            Action<string, string> act = CuteUDPEvent.onLoginRecv;
             
             actionQueue.Enqueue(act);
             
@@ -60,6 +60,19 @@ public class CuteUDPManager : MonoBehaviour {
             actionParam2.Enqueue(remoteIp);
         
         });
+
+        cuteUDP.on<string, string>("ShowRoomRecv", (string dataString, string remoteIp) => {
+
+            Action<string, string> act = CuteUDPEvent.onShowRoomRecv;
+            
+            actionQueue.Enqueue(act);
+            
+            actionParam1.Enqueue(dataString);
+            
+            actionParam2.Enqueue(remoteIp);
+        
+        });
+
     }
 
     void OnApplicationQuit() {

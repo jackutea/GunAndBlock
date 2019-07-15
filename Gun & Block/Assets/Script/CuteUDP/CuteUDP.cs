@@ -107,33 +107,33 @@ namespace CuteUDPApp {
 
             recvEndPoint = (EndPoint)new IPEndPoint(IPAddress.Any, 0);
 
+            bool socketBindState = false;
+
             // 创建 Socket
-            try {
+            while (!socketBindState) {
 
-                recvIpEndPoint = new IPEndPoint(IPAddress.Any, localPort);
+                try {
 
-                socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                    recvIpEndPoint = new IPEndPoint(IPAddress.Any, localPort);
 
-                // Socket 绑定本地端口
-                socket.Bind(recvIpEndPoint);
+                    socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-            } catch (Exception ex) {
+                    localPort += 1;
 
-                string msg = ex.Message;
+                    // Socket 绑定本地端口
+                    socket.Bind(recvIpEndPoint);
 
-                socket.Close();
+                    socketBindState = (socket.IsBound) ? true : false;
 
-                localPort += 1;
+                    Debug.Log(socketBindState);
 
-                recvIpEndPoint = new IPEndPoint(IPAddress.Any, localPort);
+                } catch (Exception ex) {
 
-                socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                    string msg = ex.Message;
 
-                // Socket 绑定本地端口
-                socket.Bind(recvIpEndPoint);
+                    Debug.Log(socketBindState);
 
-                Debug.Log(msg);
-
+                }
             }
             
             // 创建发送线程
@@ -169,10 +169,30 @@ namespace CuteUDPApp {
 
                 sendDic.Add(ip, new Dictionary<int, Packet>());
             
-
             Packet packet = new Packet(eventName, obj, ip, port);
 
-            if (sendDic[ip] == null || !sendDic[ip].ContainsKey(packet.packetHeader.i)) {
+            if (sendDic[ip] != null) {
+
+                if (!sendDic[ip].ContainsKey(packet.packetHeader.i)) {
+
+                    // 添加包到队末
+                    sendDic[ip].Add(packet.packetHeader.i, packet);
+
+                    socket.SendTo(packet.headerBytes, 0, packet.headerBytes.Length, 0, packet.toIpEndPoint);
+
+                    Debug.Log("正在发送 :" + packet.packetHeader.i + "  至" + ip + "的" + eventName + " 至IP" + ip + ":" + port);
+
+                } else {
+
+                    Debug.Log("该包头" + packet.packetHeader.i + "已在IP:" + ip + "的待发列表");
+
+                }
+
+            } else {
+
+                // Debug.Log("该IP ：" + ip + "不存在待发内容");
+
+                sendDic[ip] = new Dictionary<int, Packet>();
 
                 // 添加包到队末
                 sendDic[ip].Add(packet.packetHeader.i, packet);
@@ -180,7 +200,6 @@ namespace CuteUDPApp {
                 socket.SendTo(packet.headerBytes, 0, packet.headerBytes.Length, 0, packet.toIpEndPoint);
 
                 Debug.Log("正在发送 :" + packet.packetHeader.i + "  至" + ip + "的" + eventName + " 至IP" + ip + ":" + port);
-
             }
         }
 
@@ -526,6 +545,8 @@ namespace CuteUDPApp {
 
             }
 
+            ipToPortDic[ip] = port;
+
             BasePacket bp = new BasePacket(packetHeader, ip, port);
 
             int headerId = packetHeader.i;
@@ -739,9 +760,13 @@ namespace CuteUDPApp {
 
             appRuning = false;
 
-            if (Thread.CurrentThread.Name == "CuteMainThread") {
+            try {
 
                 Thread.CurrentThread.Abort();
+
+            } catch (ThreadAbortException ex) {
+
+                Debug.Log(ex.Message);
 
             }
 

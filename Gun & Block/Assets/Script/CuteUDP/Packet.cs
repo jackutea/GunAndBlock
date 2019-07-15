@@ -7,6 +7,7 @@ using UnityEngine;
 namespace CuteUDPApp {
     // CuteContent 就是一个包对象
     // 由1.包参数；2.源包内容；3.拆分后的小包组；4.生成的包头，四部分组成
+    [Serializable]
     public class Packet {
 
         // 包参数

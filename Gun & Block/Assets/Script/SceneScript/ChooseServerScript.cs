@@ -8,6 +8,10 @@ public class ChooseServerScript : MonoBehaviour {
 
     public GameObject HUDPanel;
 
+    public Button enterServerBtn;
+
+    public Button backLoginBtn;
+
     void Awake() {
 
         if (GameObject.FindWithTag("MainScript") == null) {
@@ -21,11 +25,34 @@ public class ChooseServerScript : MonoBehaviour {
 
     void Start() {
 
-        Debug.LogWarning("Start");
+        // Debug.LogWarning("Start");
+
+        showServers();
+
+        backLoginBtn.onClick.AddListener(() => {
+
+            PlayerDataScript.USER_NAME = "";
+
+            SceneManager.LoadScene("Login");
+
+        });
+        
+    }
+
+    void Update() {
+        
+    }
+
+    // 显示服务器列表
+    void showServers() {
 
         int[] serverIdList = ServerDataScript.serverIdList;
 
         int[] severUserCountList = ServerDataScript.serverUserCountList;
+
+        int xLine = 0;
+
+        int yLine = 0;
 
         float xDis = 300f;
         
@@ -63,30 +90,33 @@ public class ChooseServerScript : MonoBehaviour {
 
             Vector3 originPo = oneServer.transform.localPosition;
 
-            if (i < 3) oneServer.transform.localPosition = new Vector3(originPo.x + i * xDis, originPo.y, originPo.z);
+            oneServer.transform.localPosition = new Vector3(originPo.x + yLine * xDis, originPo.y + xLine * yDis, originPo.z);
 
-            if (3 <= i && i < 6) oneServer.transform.localPosition = new Vector3(originPo.x + (i - 3) * xDis, originPo.y + yDis, originPo.z);
-            
-            if (6 <= i && i < 9) oneServer.transform.localPosition = new Vector3(originPo.x + (i - 6) * xDis, originPo.y + yDis * 2, originPo.z);
+            if (yLine < 2) {
+
+                yLine += 1;
+
+            } else {
+
+                yLine = 0;
+
+                xLine += 1;
+            }
 
         }
 
-        .明天写生成房间
+        enterServerBtn.onClick.AddListener(() => {
+
+            if (ServerDataScript.choosenServerId == -1) {
+
+                Debug.Log("未选中服务器");
+
+            } else {
+
+                SceneManager.LoadScene("Home");
+                
+            }
+        });
         
-    }
-
-    void Update() {
-        
-    }
-
-    // 显示服务器列表
-    void showServers(int num) {
-
-
-    }
-
-    // 显示房间列表
-    void showRooms(int num) {
-
     }
 }
