@@ -53,7 +53,7 @@ class Packet {
 
         let nx = len / this.perLength;
         
-        let n = (parseInt(nx) === nx) ? parseInt(nx) : parseInt(nx) + 1;
+        let n = (parseInt(nx) === nx && nx !== 0) ? parseInt(nx) : parseInt(nx) + 1;
 
         let index = 0;
 
@@ -65,7 +65,7 @@ class Packet {
 
         while (i < n) {
 
-            let s = this.orginStr.substring(index, this.perLength);
+            let s = this.orginStr.substring(index, this.perLength * (i + 1));
 
             let codeByte = Buffer.from("2", "utf-8");
 

@@ -12,6 +12,9 @@ EditorBuildSettings:
     path: Assets/Scenes/Login.unity
     guid: a4ae82b0812aa34459a7a9a02df04b50
   - enabled: 1
+    path: Assets/Scenes/RoleList.unity
+    guid: 4cd16b96920b36f41959ef11b4211951
+  - enabled: 1
     path: Assets/Scenes/ChooseServer.unity
     guid: 55e432984cd95374796b7b3751fbecc9
   - enabled: 1

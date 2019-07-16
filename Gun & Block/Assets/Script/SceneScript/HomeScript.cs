@@ -12,6 +12,7 @@ public class HomeScript : MonoBehaviour {
     public Button teamCompareBtn;
     public Button raidCompareBtn;
     public Button customRoomBtn;
+    // TODO : 明天写匹配功能
 
     // 角色信息面板
     public Text username;
@@ -40,6 +41,8 @@ public class HomeScript : MonoBehaviour {
     }
 
     void Start() {
+
+        showRoleInfo();
         
     }
 
@@ -47,5 +50,36 @@ public class HomeScript : MonoBehaviour {
         
     }
 
+    // 加载角色信息
+    void showRoleInfo() {
 
+        RoleState rs = PlayerDataScript.ROLE_STATE;
+
+        username.text = "用户名 : " + rs.username;
+
+        roleName.text = "角色名 : " + rs.roleName;
+
+        level.text = "Lv : " + rs.level.ToString();
+        
+        exp.text = "经验值 : " + rs.exp.ToString();
+        
+        score.text = "排位积分 : " + rs.score.ToString();
+        
+        life.text = "生命 : " + rs.life.ToString();
+        
+        blockLife.text = "盾强度 : " + rs.blockLife.ToString();
+        
+        damage.text = "伤害 : " + rs.damage.ToString();
+        
+        shootGap.text = "射击时间间隔 : " + rs.shootGap.ToString();
+        
+        blockGap.text = "格挡时间间隔 : " + rs.blockGap.ToString();
+        
+        perfectBlockLast.text = "完美格挡持续时间 : " + rs.perfectBlockGap.ToString();
+        
+        moveSpeed.text = "移动速度 : " + rs.moveSpeed.ToString();
+        
+        bulletSpeed.text = "子弹速度 : " + rs.shootSpeed.ToString();
+
+    }
 }

@@ -106,7 +106,7 @@ namespace CuteUDPApp {
 
             float nx = (float)orginStr.Length / (float)perLength; // 计算大包需切成多少小包
 
-            int n = ((int)nx == nx) ? (int)nx : (int)nx + 1; // 分包总数
+            int n = ((int)nx == nx && nx !=0) ? (int)nx : (int)nx + 1; // 分包总数
 
             int index = 0;
 

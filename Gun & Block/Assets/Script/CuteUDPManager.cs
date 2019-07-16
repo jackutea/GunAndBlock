@@ -10,6 +10,11 @@ using UnityEngine.UI;
 public class CuteUDPManager : MonoBehaviour {
     public static CuteUDPManager instance;
     public static CuteUDP cuteUDP;
+    public string serverIp;
+    public int serverHallPort;
+    public int serverBattlePort;
+    public int currentPort;
+    public int localPort;
     public volatile static Queue<Action<string, string>> actionQueue = new Queue<Action<string, string>>();
     public volatile static Queue<string> actionParam1 = new Queue<string>();
     public volatile static Queue<string> actionParam2 = new Queue<string>();
@@ -20,7 +25,17 @@ public class CuteUDPManager : MonoBehaviour {
 
         DontDestroyOnLoad(this);
 
-        cuteUDP = new CuteUDP("127.0.0.1", 10000, 11000);
+        serverIp = "127.0.0.1";
+
+        serverHallPort = 10000;
+
+        serverBattlePort = 10001;
+
+        currentPort = serverHallPort;
+
+        localPort = 11000;
+
+        cuteUDP = new CuteUDP(serverIp, currentPort, localPort);
 
         initPrivateVoid();
 
@@ -47,31 +62,93 @@ public class CuteUDPManager : MonoBehaviour {
         }
     }
 
+    void switchPort() {
+
+        if (currentPort == serverHallPort) {
+
+            currentPort = serverBattlePort;
+
+        } else {
+
+            currentPort = serverHallPort;
+
+        }
+
+        cuteUDP.remotePort = currentPort;
+
+        cuteUDP.emitTo("SwitchPort", "", serverIp, currentPort);
+
+    }
+
     void initPrivateVoid() {
 
         cuteUDP.on<string, string>("LoginRecv", (string dataString, string remoteIp) => {
 
-            Action<string, string> act = CuteUDPEvent.onLoginRecv;
+            addQueue(CuteUDPEvent.onLoginRecv, dataString, remoteIp);
+
+            // Action<string, string> act = CuteUDPEvent.onLoginRecv;
             
-            actionQueue.Enqueue(act);
+            // actionQueue.Enqueue(act);
             
-            actionParam1.Enqueue(dataString);
+            // actionParam1.Enqueue(dataString);
             
-            actionParam2.Enqueue(remoteIp);
+            // actionParam2.Enqueue(remoteIp);
         
+        });
+
+        cuteUDP.on<string, string>("ShowRoleRecv", (string dataString, string remoteIp) => {
+
+            addQueue(CuteUDPEvent.onShowRoleRecv, dataString, remoteIp);
+
+        });
+
+        cuteUDP.on<string, string>("CreateRoleRecv", (string dataString, string remoteIp) => {
+
+            addQueue(CuteUDPEvent.onCreateRoleRecv, dataString, remoteIp);
+
+        });
+
+        cuteUDP.on<string, string>("CreateRoleFailRecv", (string dataString, string remoteIp) => {
+
+            addQueue(CuteUDPEvent.onCreateRoleFailRecv, dataString, remoteIp);
+
+        });
+
+        cuteUDP.on<string, string>("DeleteRoleRecv", (string dataString, string remoteIp) => {
+
+            addQueue(CuteUDPEvent.onDeleteRoleRecv, dataString, remoteIp);
+
+        });
+
+        cuteUDP.on<string, string>("EnterGameRecv", (string dataString, string remoteIp) => {
+
+            addQueue(CuteUDPEvent.onEnterGameRecv, dataString, remoteIp);
+
+        });
+
+        cuteUDP.on<string, string>("ShowServerRecv", (string dataString, string remoteIp) => {
+
+            // Action<string, string> act = CuteUDPEvent.onShowServerRecv;
+
+            addQueue(CuteUDPEvent.onShowServerRecv, dataString, remoteIp);
+            
         });
 
         cuteUDP.on<string, string>("ShowRoomRecv", (string dataString, string remoteIp) => {
 
-            Action<string, string> act = CuteUDPEvent.onShowRoomRecv;
-            
-            actionQueue.Enqueue(act);
-            
-            actionParam1.Enqueue(dataString);
-            
-            actionParam2.Enqueue(remoteIp);
-        
+            addQueue(CuteUDPEvent.onShowRoomRecv, dataString, remoteIp);
+
         });
+
+    }
+
+    void addQueue(Action<string, string> act, string dataString, string remoteIp) {
+
+        actionQueue.Enqueue(act);
+            
+        actionParam1.Enqueue(dataString);
+        
+        actionParam2.Enqueue(remoteIp);
 
     }
 

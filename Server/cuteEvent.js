@@ -24,27 +24,20 @@ module.exports = {
 
                 console.log(username, "用户名不存在，可注册");
 
-                let obj = {username : username, password : password};
+                let accountState = new ClassFactory.AccountState();
 
-                mongoDB.insertOne("account", obj, (err, result) => {
+                accountState.username = username;
 
-                    let roleState = new ClassFactory.RoleState();
+                accountState.password = password;
 
-                    roleState.username = username;
+                GD.ONLINE_ACCOUNT[remoteIpString] = username; // 添加玩家信息
 
-                    roleState.ip = remoteIpString;
+                mongoDB.insertOne("account", accountState, (err, result) => {
 
-                    roleState.port = remotePort;
+                    let loginSendInfo = new ClassFactory.LoginSendInfo(0, "注册成功，直接登录");
 
-                    GD.ONLINE_USERS[remoteIpString] = roleState; // 添加玩家信息
+                    this.emitTo("LoginRecv", JSON.stringify(loginSendInfo), remoteIpString, remotePort);
 
-                    mongoDB.insertOne("role", roleState, (err, result) => {
-
-                        let loginSendInfo = new ClassFactory.LoginSendInfo(0, "注册成功，直接登录");
-
-                        this.emitTo("LoginRecv", JSON.stringify(loginSendInfo), remoteIpString, remotePort);
-
-                    });
                 });
 
             } else {
@@ -86,19 +79,11 @@ module.exports = {
 
                     // console.log(username, "密码正确，直接登录");
 
-                    mongoDB.findOne("role", usernameobj, (err, result) => {
+                    GD.ONLINE_ACCOUNT[remoteIpString] = username; // 添加玩家信息
 
-                        console.log(result);
+                    let loginSendInfo = new ClassFactory.LoginSendInfo(0, "登录成功");
 
-                        let roleState = result;
-
-                        GD.ONLINE_USERS[remoteIpString] = roleState; // 添加玩家信息
-
-                        let loginSendInfo = new ClassFactory.LoginSendInfo(0, "登录成功");
-
-                        this.emitTo("LoginRecv", JSON.stringify(loginSendInfo), remoteIpString);
-
-                    });
+                    this.emitTo("LoginRecv", JSON.stringify(loginSendInfo), remoteIpString);
 
                 } else {
 
@@ -112,6 +97,106 @@ module.exports = {
                 
             }
         });
+    },
+
+    showServer : function(dataString, remoteIpString, remotePort) {
+
+        console.log(dataString);
+
+        let serverSendInfo = new ClassFactory.ServerSendInfo();
+
+        this.emitTo("ShowServerRecv", JSON.stringify(serverSendInfo), remoteIpString);
+
+    },
+
+    showRole : function(dataString, remoteIpString, remotePort) {
+
+        let serverId = parseInt(dataString);
+
+        let username = GD.ONLINE_ACCOUNT[remoteIpString];
+
+        let findObj = {inServerId : serverId, username : username};
+
+        mongoDB.find("role", findObj, (err, result) => {
+
+            let roleList = new ClassFactory.RoleListSendInfo();
+
+            for (let i = 0; i < result.length; i += 1) {
+
+                let roleState = result[i];
+
+                delete roleState["_id"];
+
+                roleList.roles.push(roleState);
+
+            }
+
+            this.emitTo("ShowRoleRecv", JSON.stringify(roleList), remoteIpString);
+
+        });
+    },
+
+    createRole : function(dataString, remoteIpString, remotePort) {
+
+        let roleInfo = JSON.parse(dataString);
+
+        let roleName = roleInfo.roleName;
+
+        let serverId = roleInfo.serverId;
+
+        let username = GD.ONLINE_ACCOUNT[remoteIpString];
+
+        let roleState = new ClassFactory.RoleState();
+
+        roleState.roleName = roleName;
+
+        roleState.username = username;
+
+        roleState.inServerId = serverId;
+
+        let findObj = {roleName : roleName};
+
+        mongoDB.findOne("role", findObj, (err, result) => {
+
+            if (result) {
+
+                this.emitTo("CreateRoleFailRecv", "角色名已存在", remoteIpString);
+
+            } else {
+
+                mongoDB.insertOne("role", roleState, (err, result) => {
+
+                    this.emitTo("CreateRoleRecv", JSON.stringify(roleState), remoteIpString);
+        
+                });
+            }
+        })
+    },
+
+    deleteRole : function(dataString, remoteIpString, remotePort) {
+
+        let roleName = dataString;
+
+        let delObj = {roleName : roleName};
+
+        mongoDB.deleteOne("role", delObj, (err, result) => {
+
+            this.emitTo("DeleteRoleRecv", "", remoteIpString);
+
+        });
+
+    },
+
+    enterGame : function(dataString, remoteIpString, remotePort) {
+
+        let roleState = JSON.parse(dataString);
+
+        let username = GD.ONLINE_ACCOUNT[remoteIpString];
+
+        GD.ONLINE_ROLE[username] = roleState;
+
+        this.emitTo("EnterGameRecv", "", remoteIpString);
+
     },
 
     showRoom : function(dataString, remoteIpString, remotePort) {

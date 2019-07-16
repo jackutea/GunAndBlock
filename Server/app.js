@@ -11,13 +11,23 @@ var cuteUDP = new CuteUDP("127.0.0.1", 9999, 10000);
 // 3. Ping功能
 // 4. 水晶
 
-// console.log(cuteUDP);
-
 cuteUDP.on("Login", cuteEvent.login);
 
 cuteUDP.on("Register", cuteEvent.register);
 
+cuteUDP.on("ShowRole", cuteEvent.showRole);
+
+cuteUDP.on("CreateRole", cuteEvent.createRole);
+
+cuteUDP.on("DeleteRole", cuteEvent.deleteRole);
+
+cuteUDP.on("EnterGame", cuteEvent.enterGame);
+
+cuteUDP.on("ShowServer", cuteEvent.showServer);
+
 cuteUDP.on("ShowRoom", cuteEvent.showRoom);
+
+
 
 // 开服 1 个
 for (let i = 0; i < 1; i += 1) {

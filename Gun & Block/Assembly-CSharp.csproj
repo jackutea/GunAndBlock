@@ -53,8 +53,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\Script\Battle\BulletScript.cs" />
-     <Compile Include="Assets\Script\Battle\RoleScript.cs" />
      <Compile Include="Assets\Script\Collection\PrefabCollection.cs" />
      <Compile Include="Assets\Script\CuteUDP\BasePacket.cs" />
      <Compile Include="Assets\Script\CuteUDP\CuteUDP.cs" />
@@ -66,15 +64,22 @@
      <Compile Include="Assets\Script\CuteUDPManager.cs" />
      <Compile Include="Assets\Script\Datas\PlayerDataScript.cs" />
      <Compile Include="Assets\Script\Datas\ServerDataScript.cs" />
+     <Compile Include="Assets\Script\Factory\CreateRoleSendInfo.cs" />
      <Compile Include="Assets\Script\Factory\LoginRecvInfo.cs" />
+     <Compile Include="Assets\Script\Factory\RoleListRecvInfo.cs" />
      <Compile Include="Assets\Script\Factory\RoleState.cs" />
      <Compile Include="Assets\Script\Factory\RoomRecvInfo.cs" />
+     <Compile Include="Assets\Script\Factory\ServerRecvInfo.cs" />
      <Compile Include="Assets\Script\Factory\UserSendInfo.cs" />
+     <Compile Include="Assets\Script\InPrefab\BulletScript.cs" />
+     <Compile Include="Assets\Script\InPrefab\OneRolePanelScript.cs" />
+     <Compile Include="Assets\Script\InPrefab\RoleScript.cs" />
      <Compile Include="Assets\Script\SceneScript\ChooseRoomScript.cs" />
      <Compile Include="Assets\Script\SceneScript\ChooseServerScript.cs" />
      <Compile Include="Assets\Script\SceneScript\FieldScript.cs" />
      <Compile Include="Assets\Script\SceneScript\HomeScript.cs" />
      <Compile Include="Assets\Script\SceneScript\LoginScript.cs" />
+     <Compile Include="Assets\Script\SceneScript\RoleListScript.cs" />
  <Reference Include="Unity.PackageManagerUI.Editor">
  <HintPath>D:/GunAndBlock/Gun &amp; Block/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
  </Reference>
@@ -278,6 +283,9 @@
  </Reference>
  <Reference Include="UnityEngine.SpatialTracking">
  <HintPath>C:/Program Files/Unity/Hub/Editor/2018.3.14f1/Editor/Data/UnityExtensions/Unity/UnitySpatialTracking/RuntimeEditor/UnityEngine.SpatialTracking.dll</HintPath>
+ </Reference>
+ <Reference Include="Newtonsoft.Json">
+ <HintPath>D:/GunAndBlock/Gun &amp; Block/Assets/Newtonsoft.Json.dll</HintPath>
  </Reference>
  <Reference Include="netstandard">
  <HintPath>C:/Program Files/Unity/Hub/Editor/2018.3.14f1/Editor/Data/NetStandard/ref/2.0.0/netstandard.dll</HintPath>

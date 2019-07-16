@@ -5,8 +5,9 @@ using UnityEngine;
 
 [Serializable]
 public class RoleState{
-    public string username;
-    public string roleName;
+    public string username = "";
+    public string roleName = "";
+    public int inServerId = -1;
     public int level = 1;
     public int exp = 0;
     public int score = 0;

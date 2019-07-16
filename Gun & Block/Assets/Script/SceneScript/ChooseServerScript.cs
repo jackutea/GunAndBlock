@@ -84,8 +84,6 @@ public class ChooseServerScript : MonoBehaviour {
                 
                 Debug.Log("已选中服务器 :" + chooseServerId.text);
 
-                Debug.Log(ServerDataScript.choosenServerId);
-
             });
 
             Vector3 originPo = oneServer.transform.localPosition;
@@ -113,7 +111,9 @@ public class ChooseServerScript : MonoBehaviour {
 
             } else {
 
-                SceneManager.LoadScene("Home");
+                CuteUDPManager.cuteUDP.emitServer("ShowRole", ServerDataScript.choosenServerId.ToString());
+
+                // SceneManager.LoadScene("Home");
                 
             }
         });

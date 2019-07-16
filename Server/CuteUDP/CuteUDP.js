@@ -213,7 +213,7 @@ class CuteUDP extends event {
 
             this.socket.send(packet.headerBytes, 0, packet.headerBytes.length, packet.toPort, packet.toIp, this.sendHeaderCallBack(packet.packetHeader.i));
 
-            console.log("正在发送：", objStr, " 至", ipStr, ":", port, "的", eventName);
+            console.log("正在发送：", packet.packetHeader.i, ":", objStr, " 至", ipStr, ":", port, "的", eventName, "字符串长度", packet.orginStr.length);
 
         }
     }
@@ -361,6 +361,23 @@ class CuteUDP extends event {
 
             // 如果长度和数量已收完，停止接收
             if (currentBasePacket.recvMiniCount == currentBasePacket.packetHeader.c && currentBasePacket.recvMiniSize == currentBasePacket.packetHeader.s) {
+
+                // 如果是空包，直接触发事件
+                if (currentBasePacket.packetHeader.c === 0) {
+
+                    console.log("触发事件", currentBasePacket.packetHeader.n);
+
+                    // 触发自定义事件
+                    this.emit(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, ipStr, ipPort);
+
+                    // 触发完删除旧包头
+                    delete this.recvJson[ipStr][currentBasePacket.packetHeader.i];
+
+                    // 发送小包齐全声明
+                    this.responseState("4", currentBasePacket.packetHeader.i, ipStr, ipPort);
+
+                    return;
+                }
 
                 if (currentBasePacket.fullStr.length == currentBasePacket.recvMiniSize) {
 

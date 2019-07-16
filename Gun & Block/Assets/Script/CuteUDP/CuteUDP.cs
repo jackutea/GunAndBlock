@@ -29,7 +29,7 @@ namespace CuteUDPApp {
         // 服务端 配置
         string remoteIp;
         int localPort;
-        int remotePort;
+        public int remotePort;
         IPEndPoint recvIpEndPoint;
         EndPoint recvEndPoint;
         IPEndPoint sendIpEndPoint;
@@ -125,7 +125,7 @@ namespace CuteUDPApp {
 
                     socketBindState = (socket.IsBound) ? true : false;
 
-                    Debug.Log(socketBindState);
+                    // Debug.Log(socketBindState);
 
                 } catch (Exception ex) {
 
@@ -371,7 +371,7 @@ namespace CuteUDPApp {
                     
                 }
 
-                byte[] recvBytes = new byte[300];
+                byte[] recvBytes = new byte[500];
 
                 try {
 
@@ -564,7 +564,7 @@ namespace CuteUDPApp {
                 
             }
 
-            Debug.Log("收到反馈码 0 新包头 : " + packetHeader.n + packetHeader.i + "，转码耗时" + (nowTimeSample - t1));
+            Debug.Log("收到反馈码 0 新包头 : " + packetHeader.n + "包头id:" + packetHeader.i + "字符长度" + packetHeader.s + "，转码耗时" + (nowTimeSample - t1));
 
             // 删除旧包头
             Packet existPacket = getCurrentPacket(ip);
@@ -660,6 +660,25 @@ namespace CuteUDPApp {
 
                     // Debug.LogAssertion("小包已完整");
 
+                    // 如果是空包，直接触发事件
+                    if (currentBasePacket.packetHeader.s == 0) {
+
+                        Debug.Log(currentBasePacket.packetHeader.i.ToString() + "完整小包长度 ：" + currentBasePacket.fullStr.Length);
+
+                        // 触发自定义事件
+                        invokeEvent<string, string>(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, ip);
+
+                        // Debug.LogAssertion("触发事件" + currentBasePacket.packetHeader.n + " : " + currentBasePacket.fullStr);
+
+                        // 触发完删除旧包头
+                        recvDic[ip].Remove(currentBasePacket.packetHeader.i);
+
+                        // 发送小包齐全声明
+                        responseState("4", currentBasePacket.packetHeader.i, ip, port);
+
+                        return;
+                    }
+
                     if (currentBasePacket.fullStr.Length == currentBasePacket.recvMiniSize) {
 
                         // 不用拼接，直接发齐全声明
@@ -675,6 +694,8 @@ namespace CuteUDPApp {
                             currentBasePacket.fullStr += s;
 
                         }
+
+                        Debug.Log(currentBasePacket.packetHeader.i.ToString() + "完整小包长度 ：" + currentBasePacket.fullStr.Length);
 
                         // 触发自定义事件
                         invokeEvent<string, string>(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, ip);
@@ -693,7 +714,7 @@ namespace CuteUDPApp {
 
                 } else {
 
-                    // Debug.LogAssertion(" recvCount " + currentBasePacket.recvMiniCount + " header.count " + currentBasePacket.packetHeader.c + " / recvSize " + currentBasePacket.recvMiniSize + " headerSize " + currentBasePacket.packetHeader.s);
+                    // Debug.Log(" recvCount " + currentBasePacket.recvMiniCount + " header.count " + currentBasePacket.packetHeader.c + " / recvSize " + currentBasePacket.recvMiniSize + " headerSize " + currentBasePacket.packetHeader.s);
 
                 }
 

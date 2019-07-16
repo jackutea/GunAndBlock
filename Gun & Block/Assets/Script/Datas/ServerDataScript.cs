@@ -9,4 +9,5 @@ class ServerDataScript {
     public static int[] serverUserCountList;
 
     public static int choosenServerId = -1;
+
 }
