@@ -57,6 +57,7 @@
      <Compile Include="Assets\Script\CuteUDP\BasePacket.cs" />
      <Compile Include="Assets\Script\CuteUDP\CuteUDP.cs" />
      <Compile Include="Assets\Script\CuteUDP\EventEmitter.cs" />
+     <Compile Include="Assets\Script\CuteUDP\IpInfo.cs" />
      <Compile Include="Assets\Script\CuteUDP\MiniPacket.cs" />
      <Compile Include="Assets\Script\CuteUDP\Packet.cs" />
      <Compile Include="Assets\Script\CuteUDP\PacketHeader.cs" />

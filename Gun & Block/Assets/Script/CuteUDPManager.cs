@@ -27,13 +27,15 @@ public class CuteUDPManager : MonoBehaviour {
 
         serverIp = "127.0.0.1";
 
+        // serverIp = "47.104.169.23";
+
         serverHallPort = 10000;
 
         serverBattlePort = 10001;
 
         currentPort = serverHallPort;
 
-        localPort = 11000;
+        localPort = 11001;
 
         cuteUDP = new CuteUDP(serverIp, currentPort, localPort);
 
@@ -55,9 +57,9 @@ public class CuteUDPManager : MonoBehaviour {
 
             string dataString = actionParam1.Dequeue();
 
-            string remoteIp = actionParam2.Dequeue();
+            string sid = actionParam2.Dequeue();
 
-            act.Invoke(dataString, remoteIp);
+            act.Invoke(dataString, sid);
 
         }
     }
@@ -82,73 +84,66 @@ public class CuteUDPManager : MonoBehaviour {
 
     void initPrivateVoid() {
 
-        cuteUDP.on<string, string>("LoginRecv", (string dataString, string remoteIp) => {
+        cuteUDP.on<string, string>("LoginRecv", (string dataString, string sid) => {
 
-            addQueue(CuteUDPEvent.onLoginRecv, dataString, remoteIp);
+            addQueue(CuteUDPEvent.onLoginRecv, dataString, sid);
 
-            // Action<string, string> act = CuteUDPEvent.onLoginRecv;
-            
-            // actionQueue.Enqueue(act);
-            
-            // actionParam1.Enqueue(dataString);
-            
-            // actionParam2.Enqueue(remoteIp);
         
         });
 
-        cuteUDP.on<string, string>("ShowRoleRecv", (string dataString, string remoteIp) => {
+        cuteUDP.on<string, string>("ShowRoleRecv", (string dataString, string sid) => {
 
-            addQueue(CuteUDPEvent.onShowRoleRecv, dataString, remoteIp);
-
-        });
-
-        cuteUDP.on<string, string>("CreateRoleRecv", (string dataString, string remoteIp) => {
-
-            addQueue(CuteUDPEvent.onCreateRoleRecv, dataString, remoteIp);
+            addQueue(CuteUDPEvent.onShowRoleRecv, dataString, sid);
 
         });
 
-        cuteUDP.on<string, string>("CreateRoleFailRecv", (string dataString, string remoteIp) => {
+        cuteUDP.on<string, string>("CreateRoleRecv", (string dataString, string sid) => {
 
-            addQueue(CuteUDPEvent.onCreateRoleFailRecv, dataString, remoteIp);
-
-        });
-
-        cuteUDP.on<string, string>("DeleteRoleRecv", (string dataString, string remoteIp) => {
-
-            addQueue(CuteUDPEvent.onDeleteRoleRecv, dataString, remoteIp);
+            addQueue(CuteUDPEvent.onCreateRoleRecv, dataString, sid);
 
         });
 
-        cuteUDP.on<string, string>("EnterGameRecv", (string dataString, string remoteIp) => {
+        cuteUDP.on<string, string>("CreateRoleFailRecv", (string dataString, string sid) => {
 
-            addQueue(CuteUDPEvent.onEnterGameRecv, dataString, remoteIp);
+            addQueue(CuteUDPEvent.onCreateRoleFailRecv, dataString, sid);
 
         });
 
-        cuteUDP.on<string, string>("ShowServerRecv", (string dataString, string remoteIp) => {
+        cuteUDP.on<string, string>("DeleteRoleRecv", (string dataString, string sid) => {
+
+            addQueue(CuteUDPEvent.onDeleteRoleRecv, dataString, sid);
+
+        });
+
+        cuteUDP.on<string, string>("EnterGameRecv", (string dataString, string sid) => {
+
+            addQueue(CuteUDPEvent.onEnterGameRecv, dataString, sid);
+
+        });
+
+        cuteUDP.on<string, string>("ShowServerRecv", (string dataString, string sid) => {
 
             // Action<string, string> act = CuteUDPEvent.onShowServerRecv;
 
-            addQueue(CuteUDPEvent.onShowServerRecv, dataString, remoteIp);
+            addQueue(CuteUDPEvent.onShowServerRecv, dataString, sid);
             
         });
 
-        cuteUDP.on<string, string>("ShowRoomRecv", (string dataString, string remoteIp) => {
+        cuteUDP.on<string, string>("ShowRoomRecv", (string dataString, string sid) => {
 
-            addQueue(CuteUDPEvent.onShowRoomRecv, dataString, remoteIp);
+            addQueue(CuteUDPEvent.onShowRoomRecv, dataString, sid);
 
         });
 
     }
 
-    void addQueue(Action<string, string> act, string dataString, string remoteIp) {
+    void addQueue(Action<string, string> act, string dataString, string sid) {
 
         actionQueue.Enqueue(act);
             
         actionParam1.Enqueue(dataString);
         
-        actionParam2.Enqueue(remoteIp);
+        actionParam2.Enqueue(sid);
 
     }
 

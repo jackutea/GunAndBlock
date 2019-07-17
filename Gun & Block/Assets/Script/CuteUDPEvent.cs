@@ -10,7 +10,7 @@ class CuteUDPEvent : MonoBehaviour {
     
     // 接收登录信息 dataString : LoginInfo {stateCode : stateCode, msg : msg }
     // 0 成功 1密码错 2用户名错 3其他
-    public static void onLoginRecv(string dataString, string remoteIp) {
+    public static void onLoginRecv(string dataString, string sid) {
 
         LoginRecvInfo loginRecvInfo = JsonUtility.FromJson<LoginRecvInfo>(dataString);
 
@@ -26,7 +26,7 @@ class CuteUDPEvent : MonoBehaviour {
     }
 
     // 接收服务器回传
-    public static void onShowServerRecv(string dataString, string remoteIp) {
+    public static void onShowServerRecv(string dataString, string sid) {
 
         ServerRecvInfo serverRecvInfo = JsonUtility.FromJson<ServerRecvInfo>(dataString);
 
@@ -46,7 +46,7 @@ class CuteUDPEvent : MonoBehaviour {
     }
 
     // 接收角色回传
-    public static void onShowRoleRecv(string dataString, string remoteIp) {
+    public static void onShowRoleRecv(string dataString, string sid) {
 
         RoleListRecvInfo roleRecvInfo = JsonUtility.FromJson<RoleListRecvInfo>(dataString);
 
@@ -61,7 +61,7 @@ class CuteUDPEvent : MonoBehaviour {
     }
 
     // 删除角色回传
-    public static void onDeleteRoleRecv(string dataString, string remoteIp) {
+    public static void onDeleteRoleRecv(string dataString, string sid) {
 
         Debug.Log("删除角色回传");
 
@@ -72,16 +72,16 @@ class CuteUDPEvent : MonoBehaviour {
     }
 
     // 进入游戏回传
-    public static void onEnterGameRecv(string dataString, string remoteIp) {
+    public static void onEnterGameRecv(string dataString, string sid) {
 
-        Debug.Log("进入HOME");
+        // Debug.Log("进入HOME");
 
         SceneManager.LoadScene("Home");
 
     }
 
     // 接收创建角色成功回传
-    public static void onCreateRoleRecv(string dataString, string remoteIp) {
+    public static void onCreateRoleRecv(string dataString,string sid) {
 
         RoleState oneRole = JsonUtility.FromJson<RoleState>(dataString);
 
@@ -92,14 +92,14 @@ class CuteUDPEvent : MonoBehaviour {
     }
 
     // 创建角色失败回传
-    public static void onCreateRoleFailRecv(string dataString, string remoteIp) {
+    public static void onCreateRoleFailRecv(string dataString, string sid) {
 
         showAlertWindow(dataString);
 
     }
 
     // 接收服务器房间信息回传
-    public static void onShowRoomRecv(string dataString, string remoteIp) {
+    public static void onShowRoomRecv(string dataString, string sid) {
 
 
     }

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Security;
+using System.Security.Cryptography;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -22,6 +24,7 @@ namespace CuteUDPApp {
 
         // UDP 配置
         Socket socket;
+        public static string socketId; // 24长度的md5
         public Thread sendThread;
         public Thread recvThread;
         public bool appRuning;
@@ -38,19 +41,19 @@ namespace CuteUDPApp {
         // CuteUDP 配置
         public static int perLength;
         double abortTimeMs; // 总超时弃发(默认3秒)
-        public double nowTimeSample; // 当前时间
+        public double nowTimeSample = new TimeSpan(DateTime.Now.Ticks).TotalMilliseconds; // 当前时间
         int repeatHeaderTimeMs; // 包头 重发延时
         int repeatMiniTimeMs; // 每个小包 重发延时 (默认为 0)
         public static int count = -1; // 包头自增计数
 
         // 发送
-        Dictionary<string, Dictionary<int, Packet>> sendDic; // 待发数据列表
+        Dictionary<string, Dictionary<int, Packet>> sendDic; // 待发数据列表 key = string ipOrSocketId
 
         // 接收
         Dictionary<string, Dictionary<int, BasePacket>> recvDic; // 待收数据列表
 
         // IP / Port 键值对
-        Dictionary<string, int> ipToPortDic;
+        Dictionary<string, IpInfo> soketIdToIpInfo;
 
         // CuteUDP 构造方法
         public CuteUDP(string remoteIp, int _remotePort, int _localPort) {
@@ -80,7 +83,7 @@ namespace CuteUDPApp {
 
             perLength = 128;
 
-            repeatHeaderTimeMs = 10; // 包头 重发延时
+            repeatHeaderTimeMs = 20; // 包头 重发延时
 
             repeatMiniTimeMs = 5; // 每个小包 重发延时 (默认为 0)
 
@@ -90,7 +93,7 @@ namespace CuteUDPApp {
 
             recvDic = new Dictionary<string, Dictionary<int, BasePacket>>();
 
-            ipToPortDic = new Dictionary<string, int>();
+            soketIdToIpInfo = new Dictionary<string, IpInfo>();
 
         }
 
@@ -107,6 +110,10 @@ namespace CuteUDPApp {
 
             recvEndPoint = (EndPoint)new IPEndPoint(IPAddress.Any, 0);
 
+            socketId = getSocketId();
+            
+            Debug.LogWarning(socketId);
+            
             bool socketBindState = false;
 
             // 创建 Socket
@@ -154,29 +161,69 @@ namespace CuteUDPApp {
 
         }
 
+        // 生成socketId
+        string getSocketId() {
+
+            string originStr = "";
+
+            originStr += Dns.GetHostName();
+
+            for (int i = 1; i < 5; i += 1) {
+
+                originStr += (nowTimeSample + i).ToString();
+
+            }
+
+            originStr += new System.Random().Next(0, 1000000).ToString();
+
+            originStr += new System.Random().Next(0, 1000000).ToString();
+
+            MD5 md5 = new MD5CryptoServiceProvider();
+
+            byte[] s = Encoding.UTF8.GetBytes(originStr);
+
+            byte[] c = md5.ComputeHash(s);
+
+            string socketIdStr = Convert.ToBase64String(c);
+
+            return socketIdStr;
+
+        }
+
         // 发送消息(发包头)
-        public void emitTo(string eventName, string obj, string ip, int port = 0) {
+        public void emitTo(string eventName, string obj, string ip, int port = 0, string sid = "") {
 
-            // 如果不填 port 则发送系统默认对方的 port
-            if (port == 0) {
+            string ipOrSocketId;
 
-                port = (ipToPortDic.ContainsKey(ip)) ? ipToPortDic[ip] : remotePort;
+            if (sid != "" && soketIdToIpInfo.ContainsKey(sid)) {
+
+                ipOrSocketId = sid;
+
+                ip = soketIdToIpInfo[sid].ip;
+
+                port = soketIdToIpInfo[sid].port;
+
+            } else {
+
+                ipOrSocketId = ip;
+
+                port = (port == 0) ? remotePort : port;
 
             }
 
             // 如果待发列表不存在该 IP ，添加
-            if (!sendDic.ContainsKey(ip))
+            if (!sendDic.ContainsKey(ipOrSocketId))
 
-                sendDic.Add(ip, new Dictionary<int, Packet>());
+                sendDic.Add(ipOrSocketId, new Dictionary<int, Packet>());
             
             Packet packet = new Packet(eventName, obj, ip, port);
 
-            if (sendDic[ip] != null) {
+            if (sendDic[ipOrSocketId] != null) {
 
-                if (!sendDic[ip].ContainsKey(packet.packetHeader.i)) {
+                if (!sendDic[ipOrSocketId].ContainsKey(packet.packetHeader.i)) {
 
                     // 添加包到队末
-                    sendDic[ip].Add(packet.packetHeader.i, packet);
+                    sendDic[ipOrSocketId].Add(packet.packetHeader.i, packet);
 
                     socket.SendTo(packet.headerBytes, 0, packet.headerBytes.Length, 0, packet.toIpEndPoint);
 
@@ -192,15 +239,26 @@ namespace CuteUDPApp {
 
                 // Debug.Log("该IP ：" + ip + "不存在待发内容");
 
-                sendDic[ip] = new Dictionary<int, Packet>();
+                sendDic[ipOrSocketId] = new Dictionary<int, Packet>();
 
                 // 添加包到队末
-                sendDic[ip].Add(packet.packetHeader.i, packet);
+                sendDic[ipOrSocketId].Add(packet.packetHeader.i, packet);
 
                 socket.SendTo(packet.headerBytes, 0, packet.headerBytes.Length, 0, packet.toIpEndPoint);
 
                 Debug.Log("正在发送 :" + packet.packetHeader.i + "  至" + ip + "的" + eventName + " 至IP" + ip + ":" + port);
             }
+        }
+
+        // 回传消息
+        public void emitBackTo(string eventName, string obj, string sid) {
+
+            string ip = soketIdToIpInfo[sid].ip;
+
+            int port = soketIdToIpInfo[sid].port;
+
+            emitTo(eventName, obj, ip, port, sid);
+
         }
 
         // 广播消息(发包头)
@@ -225,7 +283,9 @@ namespace CuteUDPApp {
 
             EndPoint ep = (EndPoint)new IPEndPoint(IPAddress.Parse(ip), port);
 
-            string sendStr = stateCode + obj.ToString();
+            string sendStr = stateCode + socketId + obj.ToString();
+
+            // Debug.Log(sendStr);
 
             byte[] sendBytes = Encoding.UTF8.GetBytes(sendStr);
 
@@ -263,9 +323,9 @@ namespace CuteUDPApp {
                     
                     for (int i = 0; i < recvDic.Count; i += 1) {
                     
-                        string ip = ipstrlist[i];
+                        string sid = ipstrlist[i];
                     
-                        BasePacket currentBasePacket = getCurrentBasePacket(ip);
+                        BasePacket currentBasePacket = getCurrentBasePacket(sid);
                     
                         if (currentBasePacket == null) continue;
 
@@ -278,7 +338,7 @@ namespace CuteUDPApp {
                     
                         if (timeGap > abortTimeMs) {
 
-                            recvDic[ip][currentBasePacket.packetHeader.i] = null;
+                            recvDic[sid][currentBasePacket.packetHeader.i] = null;
 
                             Debug.Log("超时" + abortTimeMs + "ms，清除" + currentBasePacket.packetHeader.i + "包");
 
@@ -296,9 +356,9 @@ namespace CuteUDPApp {
                 for (int i = 0; i < iplist.Count; i += 1) {
 
                     // 键/值
-                    string ip = iplist[i];
+                    string ipOrSocketId = iplist[i];
 
-                    Packet currentPacket = getCurrentPacket(ip);
+                    Packet currentPacket = getCurrentPacket(ipOrSocketId);
 
                     // 如果该 IP 对应的包为空，跳过
                     if (currentPacket == null) continue;
@@ -311,7 +371,7 @@ namespace CuteUDPApp {
                         if (currentPacket.miniPacketListRecvState == true) {
 
                             //删除字典内的数据
-                            sendDic[ip][currentPacket.packetHeader.i] = null;
+                            sendDic[ipOrSocketId][currentPacket.packetHeader.i] = null;
 
                             continue;
                         }
@@ -337,9 +397,9 @@ namespace CuteUDPApp {
                         // 包头未被对方收到，隔一段时间重发包头
                         if (timeGap > abortTimeMs) {
 
-                            sendDic[ip] = null;
+                            sendDic[ipOrSocketId] = null;
 
-                            Debug.Log("超时" + abortTimeMs + "ms，清空" + ip + "所有待发包");
+                            Debug.Log("超时" + abortTimeMs + "ms，清空" + ipOrSocketId + "所有待发包");
 
                             continue;
                         }
@@ -392,13 +452,19 @@ namespace CuteUDPApp {
 
                 string stateCode = recvString[0].ToString();
 
-                string dataString = recvString.Substring(1);
+                string sid = recvString.Substring(1, 24);
+
+                string dataString = recvString.Substring(25);
 
                 string[] ipSplit = recvEndPoint.ToString().Split(char.Parse(":"));
 
                 string ipstr = ipSplit[0];
 
                 int ipport = int.Parse(ipSplit[1]);
+
+                // Debug.Log("stateCode" + stateCode);
+                // Debug.Log("sid" + sid);
+                // Debug.Log("dataString" + dataString);
 
                 // 判断首位字符串
                 // "0" 收到新包头 转 PacketHeader 类型
@@ -410,17 +476,17 @@ namespace CuteUDPApp {
                 // 非以上的数，则是恶意修改源码，认定为非法攻击，将 ip 加入待审查名单
                 switch(stateCode) {
 
-                    case "0": invokeEvent<string, string, int>("addHeader", dataString, ipstr, ipport); break;
+                    case "0": invokeEvent<string, string, int, string>("addHeader", dataString, ipstr, ipport, sid); break;
 
-                    case "1": invokeEvent<string, string, int>("headerRecieved", dataString, ipstr, ipport); break;
+                    case "1": invokeEvent<string, string, int, string>("headerRecieved", dataString, ipstr, ipport, sid); break;
                     
-                    case "2": invokeEvent<string, string, int>("jointPacket", dataString, ipstr, ipport); break;
+                    case "2": invokeEvent<string, string, int, string>("jointPacket", dataString, ipstr, ipport, sid); break;
                     
-                    case "3": invokeEvent<string, string, int>("miniPacketRecieved", dataString, ipstr, ipport); break;
+                    case "3": invokeEvent<string, string, int, string>("miniPacketRecieved", dataString, ipstr, ipport, sid); break;
                     
-                    case "4": invokeEvent<string, string, int>("fullPacketRecieved", dataString, ipstr, ipport); break;
+                    case "4": invokeEvent<string, string, int, string>("fullPacketRecieved", dataString, ipstr, ipport, sid); break;
                     
-                    case "5": invokeEvent<string, string, int>("abortPacket", dataString, ipstr, ipport); break;
+                    case "5": invokeEvent<string, string, int, string>("abortPacket", dataString, ipstr, ipport, sid); break;
 
                     default: break;
                 }
@@ -428,78 +494,6 @@ namespace CuteUDPApp {
                 Thread.Sleep(1);
 
             }
-
-            while(appRuning == true && isAsync) {
-
-                if (socket == null || socket.Available == 0) {
-
-                    continue;
-                    
-                }
-
-                byte[] recvBytes = new byte[300];
-
-                try {
-
-                    socket.BeginReceiveFrom(recvBytes, 0, recvBytes.Length, 0, ref recvEndPoint, recvCallBack, recvBytes);
-
-                } catch (Exception ex) {
-
-                    string msg = ex.Message;
-
-                    continue;
-
-                }
-
-                Thread.Sleep(1);
-
-            }
-        }
-
-        // 异步接收时的回调线程
-        void recvCallBack(IAsyncResult iar) {
-
-            byte[] recvBytes = iar.AsyncState as byte[];
-
-            // 接收消息的字节数组 转换为字符串
-            string recvString = Encoding.UTF8.GetString(recvBytes, 0, recvBytes.Length);
-
-            string stateCode = recvString[0].ToString();
-
-            string dataString = recvString.Substring(1);
-
-            string[] ipSplit = recvEndPoint.ToString().Split(char.Parse(":"));
-
-            string ipstr = ipSplit[0];
-
-            int ipport = int.Parse(ipSplit[1]);
-
-            // 判断首位字符串
-            // "0" 收到新包头 转 PacketHeader 类型
-            // "1" 收到包头确认声明 转 int 类型（对应的是 headerId）
-            // "2" 收到小包 转 MiniPacket 类型
-            // "3" 收到小包确认 转 int 类型（对应的是 小包的 mid）
-            // "4" 收到小包齐全声明 转 int 类型（对应的是 headerId）
-            // "5" 收到弃包声明 转 int 类型（对应的是 headerId）
-            // 非以上的数，则是恶意修改源码，认定为非法攻击，将 ip 加入待审查名单
-            switch(stateCode) {
-
-                case "0": invokeEvent<string, string, int>("addHeader", dataString, ipstr, ipport); break;
-
-                case "1": invokeEvent<string, string, int>("headerRecieved", dataString, ipstr, ipport); break;
-                
-                case "2": invokeEvent<string, string, int>("jointPacket", dataString, ipstr, ipport); break;
-                
-                case "3": invokeEvent<string, string, int>("miniPacketRecieved", dataString, ipstr, ipport); break;
-                
-                case "4": invokeEvent<string, string, int>("fullPacketRecieved", dataString, ipstr, ipport); break;
-                
-                case "5": invokeEvent<string, string, int>("abortPacket", dataString, ipstr, ipport); break;
-
-                default: break;
-            }
-
-            socket.EndReceiveFrom(iar, ref recvEndPoint);
         }
 
         // 监听事件
@@ -507,45 +501,46 @@ namespace CuteUDPApp {
 
             // Debug.Log("监听事件的线程是" + Thread.CurrentThread.Name);
 
-            on<string, string, int>("connectOnce", onConnenctOnce);
+            on<string, string>("connectOnce", onConnenctOnce);
 
-            on<string, string, int>("addHeader", addHeader);
+            on<string, string, int, string>("addHeader", addHeader);
 
-            on<string, string, int>("headerRecieved", headerRecieved);
+            on<string, string, int, string>("headerRecieved", headerRecieved);
             
-            on<string, string, int>("jointPacket", jointPacket);
+            on<string, string, int, string>("jointPacket", jointPacket);
             
-            on<string, string, int>("miniPacketRecieved", miniPacketRecieved);
+            on<string, string, int, string>("miniPacketRecieved", miniPacketRecieved);
             
-            on<string, string, int>("fullPacketRecieved", fullPacketRecieved);
+            on<string, string, int, string>("fullPacketRecieved", fullPacketRecieved);
             
-            on<string, string, int>("abortPacket", abortPacket);
+            on<string, string, int, string>("abortPacket", abortPacket);
         }
 
-        // 初次连接事件
-        void onConnenctOnce(string dataString, string remoteIp, int remotePort) {
+        // 初次测试连接事件
+        void onConnenctOnce(string dataString, string sid) {
 
-            // 加入 IP / Port 键值对
-            ipToPortDic[remoteIp] = remotePort;
+            string remoteIp = soketIdToIpInfo[sid].ip;
+
+            int remotePort = soketIdToIpInfo[sid].port;
 
             Debug.Log("ConnectOnce From" + remoteIp + ":" + remotePort + "; Msg :" + dataString);
 
         }
 
         // 0 收到新包头 转 PacketHeader 类型
-        void addHeader(string dataString, string ip, int port) {
+        void addHeader(string dataString, string ip, int port, string sid) {
 
             double t1 = nowTimeSample;
 
             PacketHeader packetHeader = JsonUtility.FromJson<PacketHeader>(dataString);
 
-            if (!recvDic.ContainsKey(ip)) {
+            if (!recvDic.ContainsKey(sid)) {
 
-                recvDic.Add(ip, new Dictionary<int, BasePacket>());
+                recvDic.Add(sid, new Dictionary<int, BasePacket>());
 
             }
 
-            ipToPortDic[ip] = port;
+            soketIdToIpInfo[sid] = new IpInfo(ip, port);
 
             BasePacket bp = new BasePacket(packetHeader, ip, port);
 
@@ -554,48 +549,34 @@ namespace CuteUDPApp {
             // 反馈收到新包头
             responseState("1", headerId, ip, port);
 
-            if (recvDic[ip] == null || !recvDic[ip].ContainsKey(headerId)) {
+            if (recvDic[sid] == null || !recvDic[sid].ContainsKey(headerId)) {
 
-                recvDic[ip] = new Dictionary<int, BasePacket>();
+                recvDic[sid] = new Dictionary<int, BasePacket>();
 
-                recvDic[ip].Add(headerId, bp);
+                recvDic[sid].Add(headerId, bp);
 
                 // Debug.Log("正在处理包头");
                 
             }
 
-            Debug.Log("收到反馈码 0 新包头 : " + packetHeader.n + "包头id:" + packetHeader.i + "字符长度" + packetHeader.s + "，转码耗时" + (nowTimeSample - t1));
-
-            // 删除旧包头
-            Packet existPacket = getCurrentPacket(ip);
-
-            if (existPacket == null) return;
-
-            int existHeaderId = existPacket.packetHeader.i;
-
-            // 如果包头和小包都确认收完，则从发送字典里删除
-            if (existPacket.packetHeaderRecvState == true && existPacket.miniPacketListRecvState == true) {
-
-                Debug.Log("删除旧包头" + existHeaderId);
-
-                sendDic[ip][existHeaderId] = null;
-
-            }
+            // Debug.Log("收到反馈码 0 新包头 : " + packetHeader.n + "包头id:" + packetHeader.i + "字符长度" + packetHeader.s + "，转码耗时" + (nowTimeSample - t1));
 
         }
 
         // 1 收到包头确认 转 int 类型（对应的是 headerId）
-        void headerRecieved(string dataString, string ip, int port) {
+        void headerRecieved(string dataString, string ip, int port, string sid) {
             
             int headerId = int.Parse(dataString);
 
-            if (sendDic.ContainsKey(ip)) {
+            string ipOrSocketId = (sendDic.ContainsKey(sid)) ? sid : ip;
 
-                if (sendDic[ip].ContainsKey(headerId)) {
+            if (sendDic.ContainsKey(ipOrSocketId)) {
 
-                    Debug.Log("收到反馈码 1 包头 id " + headerId + "已被对方接收");
+                if (sendDic[ipOrSocketId].ContainsKey(headerId)) {
 
-                    Packet currentPacket = sendDic[ip][headerId];
+                    // Debug.Log("收到反馈码 1 包头 id " + headerId + "已被对方接收");
+
+                    Packet currentPacket = sendDic[ipOrSocketId][headerId];
 
                     currentPacket.packetHeaderRecvState = true;
 
@@ -623,7 +604,7 @@ namespace CuteUDPApp {
         }
 
         // 2 收到小包 转 MiniPacket 类型 回复收到小包序号
-        void jointPacket(string dataString, string ip, int port) {
+        void jointPacket(string dataString, string ip, int port, string sid) {
 
             // 接收到的小包字符串转码成 MiniPacket
             MiniPacket minipacket =  JsonUtility.FromJson<MiniPacket>(dataString);
@@ -631,12 +612,12 @@ namespace CuteUDPApp {
             // 发送确认收到小包序号
             responseState("3", minipacket.i, ip, port);
 
-            BasePacket currentBasePacket = getCurrentBasePacket(ip);
+            BasePacket currentBasePacket = getCurrentBasePacket(sid);
 
             // 如果包存在，计算拼接
             if (currentBasePacket != null) {
 
-                Debug.Log("收到反馈码 2 小包 id : " + minipacket.i);
+                // Debug.Log("收到反馈码 2 小包 id : " + minipacket.i);
 
                 // 如果未计算过该 小包
                 if (currentBasePacket.jointStr[minipacket.i] == null) {
@@ -663,15 +644,15 @@ namespace CuteUDPApp {
                     // 如果是空包，直接触发事件
                     if (currentBasePacket.packetHeader.s == 0) {
 
-                        Debug.Log(currentBasePacket.packetHeader.i.ToString() + "完整小包长度 ：" + currentBasePacket.fullStr.Length);
+                        // Debug.Log(currentBasePacket.packetHeader.i.ToString() + "完整小包长度 ：" + currentBasePacket.fullStr.Length);
 
                         // 触发自定义事件
-                        invokeEvent<string, string>(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, ip);
+                        invokeEvent<string, string>(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, sid);
 
                         // Debug.LogAssertion("触发事件" + currentBasePacket.packetHeader.n + " : " + currentBasePacket.fullStr);
 
                         // 触发完删除旧包头
-                        recvDic[ip].Remove(currentBasePacket.packetHeader.i);
+                        recvDic[sid].Remove(currentBasePacket.packetHeader.i);
 
                         // 发送小包齐全声明
                         responseState("4", currentBasePacket.packetHeader.i, ip, port);
@@ -695,15 +676,15 @@ namespace CuteUDPApp {
 
                         }
 
-                        Debug.Log(currentBasePacket.packetHeader.i.ToString() + "完整小包长度 ：" + currentBasePacket.fullStr.Length);
+                        // Debug.Log(currentBasePacket.packetHeader.i.ToString() + "完整小包长度 ：" + currentBasePacket.fullStr.Length);
 
                         // 触发自定义事件
-                        invokeEvent<string, string>(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, ip);
+                        invokeEvent<string, string>(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, sid);
 
                         // Debug.LogAssertion("触发事件" + currentBasePacket.packetHeader.n + " : " + currentBasePacket.fullStr);
 
                         // 触发完删除旧包头
-                        recvDic[ip].Remove(currentBasePacket.packetHeader.i);
+                        recvDic[sid].Remove(currentBasePacket.packetHeader.i);
 
                         // 发送小包齐全声明
                         responseState("4", currentBasePacket.packetHeader.i, ip, port);
@@ -726,11 +707,13 @@ namespace CuteUDPApp {
         }
 
         // 3 收到小包确认 转 int 类型（对应的是 小包的 mid）
-        void miniPacketRecieved(string dataString, string ip, int port) {
+        void miniPacketRecieved(string dataString, string ip, int port, string sid) {
 
             int mid = int.Parse(dataString);
 
-            Packet currentPacket = getCurrentPacket(ip);
+            string ipOrSocketId = (sendDic.ContainsKey(sid)) ? sid : ip;
+
+            Packet currentPacket = getCurrentPacket(ipOrSocketId);
 
             if (currentPacket != null) {
 
@@ -746,11 +729,13 @@ namespace CuteUDPApp {
         }
 
         // 4 收到小包齐全确认 转 int 类型（对应的是 headerId）
-        void fullPacketRecieved(string dataString, string ip, int port) {
+        void fullPacketRecieved(string dataString, string ip, int port, string sid) {
 
             int headerId = int.Parse(dataString);
+
+            string ipOrSocketId = (sendDic.ContainsKey(sid)) ? sid : ip;
             
-            Packet existPacket = getCurrentPacket(ip);
+            Packet existPacket = getCurrentPacket(ipOrSocketId);
 
             if (existPacket != null) {
 
@@ -758,7 +743,7 @@ namespace CuteUDPApp {
 
                 existPacket.miniPacketListRecvState = true;
 
-                sendDic[ip].Remove(headerId);
+                sendDic[ipOrSocketId].Remove(headerId);
 
             } else {
 
@@ -768,7 +753,7 @@ namespace CuteUDPApp {
         }
 
         // 5 收到断连声明 转 int 类型（对应的是 headerId）
-        void abortPacket(string dataString, string ip, int port) {
+        void abortPacket(string dataString, string ip, int port, string sid) {
 
             Debug.Log("收到反馈码 5");
 
@@ -795,29 +780,29 @@ namespace CuteUDPApp {
 
             recvThread.Abort();
 
-            removeListener<string, string, int>("connectOnce", onConnenctOnce);
+            removeListener<string, string>("connectOnce", onConnenctOnce);
 
-            removeListener<string, string, int>("addHeader", addHeader);
+            removeListener<string, string, int, string>("addHeader", addHeader);
 
-            removeListener<string, string, int>("headerRecieved", headerRecieved);
+            removeListener<string, string, int, string>("headerRecieved", headerRecieved);
             
-            removeListener<string, string, int>("jointPacket", jointPacket);
+            removeListener<string, string, int, string>("jointPacket", jointPacket);
             
-            removeListener<string, string, int>("miniPacketRecieved", miniPacketRecieved);
+            removeListener<string, string, int, string>("miniPacketRecieved", miniPacketRecieved);
             
-            removeListener<string, string, int>("fullPacketRecieved", fullPacketRecieved);
+            removeListener<string, string, int, string>("fullPacketRecieved", fullPacketRecieved);
             
-            removeListener<string, string, int>("abortPacket", abortPacket);
+            removeListener<string, string, int, string>("abortPacket", abortPacket);
         }
 
         // 处理字典的私有方法（不重要）
-        Packet getCurrentPacket(string _ip) {
+        Packet getCurrentPacket(string ipOrSocketId) {
 
-            if (_ip == "" || _ip == null) return null;
+            if (ipOrSocketId == "" || ipOrSocketId == null) return null;
 
-            if (!sendDic.ContainsKey(_ip)) return null;
+            if (!sendDic.ContainsKey(ipOrSocketId)) return null;
 
-            Dictionary<int, Packet> packetValueDic = sendDic[_ip];
+            Dictionary<int, Packet> packetValueDic = sendDic[ipOrSocketId];
 
             if (packetValueDic == null) return null;
 
@@ -834,13 +819,13 @@ namespace CuteUDPApp {
             return packetValueDic[ik[0]];
         }
 
-        BasePacket getCurrentBasePacket(string _ip) {
+        BasePacket getCurrentBasePacket(string ipOrSocketId) {
 
-            if (_ip == "" || _ip == null) return null;
+            if (ipOrSocketId == "" || ipOrSocketId == null) return null;
 
-            if (!recvDic.ContainsKey(_ip)) return null;
+            if (!recvDic.ContainsKey(ipOrSocketId)) return null;
 
-            Dictionary<int, BasePacket> packetValueDic = recvDic[_ip];
+            Dictionary<int, BasePacket> packetValueDic = recvDic[ipOrSocketId];
 
             if (packetValueDic == null) return null;
 

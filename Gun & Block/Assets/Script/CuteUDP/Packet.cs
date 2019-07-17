@@ -68,8 +68,6 @@ namespace CuteUDPApp {
 
             this.miniPacketListRecvState = false;
 
-            // this.packetCode = "0";
-
         }
 
         byte[] getHeaderBytes() {
@@ -80,9 +78,17 @@ namespace CuteUDPApp {
 
             byte[] packetCodeBytes = Encoding.UTF8.GetBytes("0");
 
+            byte[] sidBytes = Encoding.UTF8.GetBytes(CuteUDP.socketId);
+
             byte[] sendBytes = Encoding.UTF8.GetBytes(sendStr);
 
-            return concatBytes(packetCodeBytes, sendBytes);
+            byte[] concated = concatBytes(concatBytes(packetCodeBytes, sidBytes), sendBytes);
+
+            string constr = Encoding.UTF8.GetString(concated);
+
+            // Debug.LogWarning(constr);
+
+            return concated;
         }
 
         byte[] concatBytes(byte[] a, byte[] b) {
@@ -128,10 +134,12 @@ namespace CuteUDPApp {
                 string sendStr = JsonUtility.ToJson(new MiniPacket(i, s));
 
                 byte[] packetCodeBytes = Encoding.UTF8.GetBytes("2");
+
+                byte[] sidBytes = Encoding.UTF8.GetBytes(CuteUDP.socketId);
                 
                 byte[] sendBytes = Encoding.UTF8.GetBytes(sendStr);
 
-                miniPacketList.Add(concatBytes(packetCodeBytes, sendBytes)); // 从最后一个开始打包
+                miniPacketList.Add(concatBytes(concatBytes(packetCodeBytes, sidBytes), sendBytes)); // 从最后一个开始打包
 
                 index += perLength;
 

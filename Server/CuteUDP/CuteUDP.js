@@ -3,6 +3,7 @@ var udp = require("dgram");
 
 var Packet = require("./Packet");
 var BasePacket = require("./BasePacket");
+var IpInfo = require("./IpInfo");
 
 class CuteUDP extends event {
 
@@ -10,7 +11,7 @@ class CuteUDP extends event {
 
         super();
 
-        CuteUDP.prototype.instance = this;
+        CuteUDP.instance = this;
 
         // 实例化 Socket;
         this.socket = udp.createSocket("udp4");
@@ -24,14 +25,20 @@ class CuteUDP extends event {
 
         // CuteUDP 配置
         this.abortTimeMs = 3000; // 总超时弃发(默认3秒)
+
+        this.perLength = 128;
+
+        Packet.perLength = this.perLength;
         
         this.nowTimeSample; // 当前时间
         
-        this.repeatHeaderTimeMs = 10; // 包头 重发延时
+        this.repeatHeaderTimeMs = 20; // 包头 重发延时
         
         this.repeatMiniTimeMs = 5; // 每个小包 重发延时 (默认为 0)
 
-        this.ipPortJson = {};
+        this.socketIdToIpInfo = {};
+
+        CuteUDP.socketId = Packet.getSocketId();
 
         // 发送
         this.sendJson = new Object();
@@ -179,41 +186,66 @@ class CuteUDP extends event {
     }
 
     // 初次连接
-    onConnectOnce(dataString, remoteIp, remotePort) {
+    onConnectOnce(dataString, sid) {
+
+        let remoteIp = this.socketIdToIpInfo[sid].ip;
+
+        let remotePort = this.socketIdToIpInfo[sid].port;
 
         // 增加 IP / Port 键值对
-        this.ipPortJson[remoteIp] = remotePort;
-
         console.log("Msg :", dataString, "; From ", remoteIp, ":", remotePort);
 
     }
 
     // 向单体发消息（发包头）
-    emitTo(eventName, objStr, ipStr, port) {
+    emitTo(eventName, objStr, ipStr, port, sid) {
 
-        if (port === undefined) {
+        let ipOrSocketId;
 
-            port = (this.ipPortJson[ipStr]) ? this.ipPortJson[ipStr] : this.remotePort;
+        if (sid !== undefined && this.socketIdToIpInfo[sid]) {
+
+            ipOrSocketId = sid;
+
+            ipStr = this.socketIdToIpInfo[sid].ip;
+
+            port = this.socketIdToIpInfo[sid].port;
+
+        } else {
+
+            ipOrSocketId = ipStr;
+
+            port = (port === undefined) ? this.remotePort : port;
 
         }
 
         let sendJson = this.sendJson;
 
-        if (!sendJson[ipStr])
+        if (!sendJson[ipOrSocketId])
 
-            sendJson[ipStr] = new Object();
+            sendJson[ipOrSocketId] = new Object();
 
         let packet = new Packet(eventName, objStr, ipStr, port);
 
-        if (!sendJson[ipStr][packet.packetHeader.i]) {
+        if (!sendJson[ipOrSocketId][packet.packetHeader.i]) {
 
-            sendJson[ipStr][packet.packetHeader.i] = packet;
+            sendJson[ipOrSocketId][packet.packetHeader.i] = packet;
 
             this.socket.send(packet.headerBytes, 0, packet.headerBytes.length, packet.toPort, packet.toIp, this.sendHeaderCallBack(packet.packetHeader.i));
 
             console.log("正在发送：", packet.packetHeader.i, ":", objStr, " 至", ipStr, ":", port, "的", eventName, "字符串长度", packet.orginStr.length);
 
         }
+    }
+
+    // 回传消息
+    emitBackTo(eventName, objStr, sid) {
+
+        let ip = this.socketIdToIpInfo[sid].ip;
+
+        let port = this.socketIdToIpInfo[sid].port;
+
+        this.emitTo(eventName, objStr, ip, port, sid);
+
     }
 
     // 广播消息（发包头）
@@ -236,76 +268,65 @@ class CuteUDP extends event {
     // 向发送者反馈状态
     responseState(stateCode, obj, ipStr, ipPort) {
 
-        let sendStr = stateCode + obj.toString();
+        let sendStr = stateCode + CuteUDP.socketId + obj.toString();
 
         let sendBytes = Buffer.from(sendStr, "utf-8");
 
         this.socket.send(sendBytes, 0, sendBytes.length, ipPort, ipStr, this.sendResponseStateBack(sendStr));
 
-        console.log("发送反馈码：", stateCode, "内容：", obj.toString());
+        // console.log("发送反馈码：", stateCode, "内容：", obj.toString());
 
     }
 
     // 0 收到新包头
-    addHeader(dataString, ipStr, ipPort) {
+    addHeader(dataString, ipStr, ipPort, sid) {
 
-        console.log("收到反馈码 0 新包头 id: ", dataString, "来自", ipStr, ":", ipPort);
+        // console.log("收到反馈码 0 新包头 id: ", dataString, "来自", ipStr, ":", ipPort);
 
         let packetHeader = JSON.parse(dataString);
 
         let recvJson = this.recvJson;
 
-        if (!recvJson[ipStr]) {
+        if (!recvJson[sid]) {
 
-            recvJson[ipStr] = new Object();
+            recvJson[sid] = new Object();
             
         }
 
-        this.ipPortJson[ipStr] = ipPort;
+        this.socketIdToIpInfo[sid] = new IpInfo(ipStr, ipPort);
 
         let basePacket = new BasePacket(packetHeader, ipStr, ipPort);
 
         let headerId = packetHeader.i;
         
-        if (!recvJson[ipStr][headerId]) {
+        if (!recvJson[sid][headerId]) {
 
-            recvJson[ipStr][headerId] = basePacket;
+            recvJson[sid][headerId] = basePacket;
 
         }
 
         // 反馈收到新包头
         this.responseState("1", headerId, ipStr, ipPort);
 
-        // 删除旧包头
-        let existPacket = this.getCurrentPacket(this.sendJson, ipStr);
-
-        if (!existPacket) return;
-
-        let existHeaderId = existPacket.packetHeader.i;
-
-        if (existPacket.packetHeaderRecvState == true && existPacket.miniPacketListRecvState == true) {
-
-            console.log("删除旧包头", existHeaderId);
-
-            delete this.sendJson[ipStr][existHeaderId];
-        }
     }
 
     // 1 收到包头确认
-    headerRecieved(dataString, ipStr, ipPort) {
+    headerRecieved(dataString, ipStr, ipPort, sid) {
 
         // dataString 即 headerId === PacketHeader.i
         let headerId = parseInt(dataString);
 
         let sendJson = this.sendJson;
 
-        if (sendJson[ipStr]) {
+        let ipOrSocketId = (sendJson[sid]) ? sid : ipStr;
 
-            if (sendJson[ipStr][headerId]) {
+        if (sendJson[ipOrSocketId]) {
+
+            if (sendJson[ipOrSocketId][headerId]) {
 
                 // console.log("收到反馈码 1 包头 :", headerId, "已被对方接收");
 
-                let currentPacket = sendJson[ipStr][headerId]
+                let currentPacket = sendJson[ipOrSocketId][headerId]
 
                 currentPacket.packetHeaderRecvState = true;
                 
@@ -332,14 +353,14 @@ class CuteUDP extends event {
     }
 
     // 2 收到新小包 MiniPacket 开始拼接
-    jointPacket(dataString, ipStr, ipPort) {
+    jointPacket(dataString, ipStr, ipPort, sid) {
 
         let miniPacket = JSON.parse(dataString);
 
         // 发送已收到的小包序号
         this.responseState("3", miniPacket.i, ipStr, ipPort);
 
-        let currentBasePacket = this.getCurrentPacket(this.recvJson, ipStr);
+        let currentBasePacket = this.getCurrentPacket(this.recvJson, sid);
 
         if (currentBasePacket) {
 
@@ -363,13 +384,13 @@ class CuteUDP extends event {
                 // 如果是空包，直接触发事件
                 if (currentBasePacket.packetHeader.c === 0) {
 
-                    console.log("触发事件", currentBasePacket.packetHeader.n);
+                    // console.log("触发事件", currentBasePacket.packetHeader.n);
 
                     // 触发自定义事件
-                    this.emit(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, ipStr, ipPort);
+                    this.emit(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, sid);
 
                     // 触发完删除旧包头
-                    delete this.recvJson[ipStr][currentBasePacket.packetHeader.i];
+                    delete this.recvJson[sid][currentBasePacket.packetHeader.i];
 
                     // 发送小包齐全声明
                     this.responseState("4", currentBasePacket.packetHeader.i, ipStr, ipPort);
@@ -393,13 +414,13 @@ class CuteUDP extends event {
 
                     }
 
-                    console.log("触发事件", currentBasePacket.packetHeader.n);
+                    // console.log("触发事件", currentBasePacket.packetHeader.n);
 
                     // 触发自定义事件
-                    this.emit(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, ipStr, ipPort);
+                    this.emit(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, sid);
 
                     // 触发完删除旧包头
-                    delete this.recvJson[ipStr][currentBasePacket.packetHeader.i];
+                    delete this.recvJson[sid][currentBasePacket.packetHeader.i];
 
                     // 发送小包齐全声明
                     this.responseState("4", currentBasePacket.packetHeader.i, ipStr, ipPort);
@@ -416,13 +437,15 @@ class CuteUDP extends event {
     }
 
     // 3 收到小包序号反馈 mid
-    miniPacketRecieved(dataString, ipStr, ipPort) {
+    miniPacketRecieved(dataString, ipStr, ipPort, sid) {
 
         // console.log("收到反馈码 3 小包序号 mid: ", dataString);
 
         let mid = parseInt(dataString);
 
-        let currentPacket = this.getCurrentPacket(this.sendJson, ipStr);
+        let ipOrSocketId = (this.sendJson[sid]) ? sid : ipStr;
+        
+        let currentPacket = this.getCurrentPacket(this.sendJson, ipOrSocketId);
 
         if (!currentPacket) return;
 
@@ -433,11 +456,13 @@ class CuteUDP extends event {
     }
 
     // 4 收到小包齐全反馈 headerId ，删除旧包头
-    fullPacketRecieved(dataString, ipStr, ipPort) {
+    fullPacketRecieved(dataString, ipStr, ipPort, sid) {
 
         let headerId = parseInt(dataString);
 
-        let existPacket = this.getCurrentPacket(this.sendJson, ipStr);
+        let ipOrSocketId = (this.sendJson[sid]) ? sid : ipStr;
+
+        let existPacket = this.getCurrentPacket(this.sendJson, ipOrSocketId);
 
         if (existPacket !== null && existPacket !== undefined) {
 
@@ -446,7 +471,7 @@ class CuteUDP extends event {
             console.log(" 收到反馈码 4 所有小包被收到, 耗时", this.nowTimeSample - existPacket.sendTimeSample);
 
             // 已接收完毕，删除该包
-            delete this.sendJson[ipStr][headerId];
+            delete this.sendJson[ipOrSocketId][headerId];
 
         } else {
 
@@ -456,7 +481,7 @@ class CuteUDP extends event {
     }
 
     // 5 收到弃发小包请求 headerId
-    abortPacket(dataString, ipStr, ipPort) {
+    abortPacket(dataString, ipStr, ipPort, sid) {
 
         console.log("收到弃发小包请求" + dataString);
 
@@ -469,7 +494,7 @@ class CuteUDP extends event {
 
         console.log(address);
 
-        CuteUDP.prototype.instance.emitServer("connectOnce", "Hello World!");
+        CuteUDP.instance.emitServer("connectOnce", "Hello World!");
 
     }
 
@@ -493,28 +518,33 @@ class CuteUDP extends event {
 
         let stateCode = recvString[0].toString();
 
-        let dataString = recvString.substring(1);
+        let sid = recvString.substr(1, 24);
 
-        console.log(rinfo);
+        let dataString = recvString.substring(25);
+
+        // console.log("recvString", recvString);
+        // console.log("stateCode", stateCode);
+        // console.log("sid", sid);
+        // console.log("dataString", dataString);
 
         switch (stateCode) {
 
-            case "0": CuteUDP.prototype.instance.emit("addHeader", dataString, ipStr, ipPort);
+            case "0": CuteUDP.instance.emit("addHeader", dataString, ipStr, ipPort, sid);
                 break;
 
-            case "1": CuteUDP.prototype.instance.emit("headerRecieved", dataString, ipStr, ipPort);
+            case "1": CuteUDP.instance.emit("headerRecieved", dataString, ipStr, ipPort, sid);
                 break;
 
-            case "2": CuteUDP.prototype.instance.emit("jointPacket", dataString, ipStr, ipPort);
+            case "2": CuteUDP.instance.emit("jointPacket", dataString, ipStr, ipPort, sid);
                 break;
 
-            case "3": CuteUDP.prototype.instance.emit("miniPacketRecieved", dataString, ipStr, ipPort);
+            case "3": CuteUDP.instance.emit("miniPacketRecieved", dataString, ipStr, ipPort, sid);
                 break;
 
-            case "4": CuteUDP.prototype.instance.emit("fullPacketRecieved", dataString, ipStr, ipPort);
+            case "4": CuteUDP.instance.emit("fullPacketRecieved", dataString, ipStr, ipPort, sid);
                 break;
 
-            case "5": CuteUDP.prototype.instance.emit("abortPacket", dataString, ipStr, ipPort);
+            case "5": CuteUDP.instance.emit("abortPacket", dataString, ipStr, ipPort, sid);
                 break;
 
             default:
@@ -554,9 +584,9 @@ class CuteUDP extends event {
     }
 
     // 获取当前收发的 Packet / BasePacket
-    getCurrentPacket(json, ip) {
+    getCurrentPacket(_json, ipOrSocketId) {
 
-        let v = json[ip];
+        let v = _json[ipOrSocketId];
 
         if (!v) return null;
 
@@ -564,10 +594,12 @@ class CuteUDP extends event {
 
         if (!k) return null;
 
-        return json[ip][k];
+        return _json[ipOrSocketId][k];
 
     }
 
 }
+
+CuteUDP.socketId = "";
 
 module.exports = CuteUDP;

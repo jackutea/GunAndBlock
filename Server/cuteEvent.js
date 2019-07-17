@@ -6,7 +6,7 @@ var GD = require("./Datas/GD");
 module.exports = {
 
     // 注册
-    register: function(dataString, remoteIpString, remotePort) {
+    register: function(dataString, sid) {
 
         let UserInfo = JSON.parse(dataString);
 
@@ -30,13 +30,13 @@ module.exports = {
 
                 accountState.password = password;
 
-                GD.ONLINE_ACCOUNT[remoteIpString] = username; // 添加玩家信息
+                GD.ONLINE_ACCOUNT[sid] = username; // 添加玩家信息
 
                 mongoDB.insertOne("account", accountState, (err, result) => {
 
                     let loginSendInfo = new ClassFactory.LoginSendInfo(0, "注册成功，直接登录");
 
-                    this.emitTo("LoginRecv", JSON.stringify(loginSendInfo), remoteIpString, remotePort);
+                    this.emitBackTo("LoginRecv", JSON.stringify(loginSendInfo), sid);
 
                 });
 
@@ -44,14 +44,14 @@ module.exports = {
 
                 let loginSendInfo = new ClassFactory.LoginSendInfo(3, username + "已存在，无法注册");
 
-                this.emitTo("LoginRecv", JSON.stringify(loginSendInfo), remoteIpString);
+                this.emitBackTo("LoginRecv", JSON.stringify(loginSendInfo), sid);
 
             }
         });
     },
 
     // 传来登录申请 dataString 类型为 UserInfo
-    login : function (dataString, remoteIpString, remotePort) {
+    login : function (dataString, sid) {
 
         let UserInfo = JSON.parse(dataString);
 
@@ -71,7 +71,7 @@ module.exports = {
 
                 let loginSendInfo = new ClassFactory.LoginSendInfo(2, "用户名不存在");
 
-                this.emitTo("LoginRecv", JSON.stringify(loginSendInfo), remoteIpString);
+                this.emitBackTo("LoginRecv", JSON.stringify(loginSendInfo), sid);
 
             } else {
 
@@ -79,11 +79,11 @@ module.exports = {
 
                     // console.log(username, "密码正确，直接登录");
 
-                    GD.ONLINE_ACCOUNT[remoteIpString] = username; // 添加玩家信息
+                    GD.ONLINE_ACCOUNT[sid] = username; // 添加玩家信息
 
                     let loginSendInfo = new ClassFactory.LoginSendInfo(0, "登录成功");
 
-                    this.emitTo("LoginRecv", JSON.stringify(loginSendInfo), remoteIpString);
+                    this.emitBackTo("LoginRecv", JSON.stringify(loginSendInfo), sid);
 
                 } else {
 
@@ -91,7 +91,7 @@ module.exports = {
 
                     let loginSendInfo = new ClassFactory.LoginSendInfo(1, "密码错误");
 
-                    this.emitTo("LoginRecv", JSON.stringify(loginSendInfo), remoteIpString);
+                    this.emitBackTo("LoginRecv", JSON.stringify(loginSendInfo), sid);
 
                 }
                 
@@ -99,21 +99,21 @@ module.exports = {
         });
     },
 
-    showServer : function(dataString, remoteIpString, remotePort) {
+    showServer : function(dataString, sid) {
 
         console.log(dataString);
 
         let serverSendInfo = new ClassFactory.ServerSendInfo();
 
-        this.emitTo("ShowServerRecv", JSON.stringify(serverSendInfo), remoteIpString);
+        this.emitBackTo("ShowServerRecv", JSON.stringify(serverSendInfo), sid);
 
     },
 
-    showRole : function(dataString, remoteIpString, remotePort) {
+    showRole : function(dataString, sid) {
 
         let serverId = parseInt(dataString);
 
-        let username = GD.ONLINE_ACCOUNT[remoteIpString];
+        let username = GD.ONLINE_ACCOUNT[sid];
 
         let findObj = {inServerId : serverId, username : username};
 
@@ -131,12 +131,12 @@ module.exports = {
 
             }
 
-            this.emitTo("ShowRoleRecv", JSON.stringify(roleList), remoteIpString);
+            this.emitBackTo("ShowRoleRecv", JSON.stringify(roleList), sid);
 
         });
     },
 
-    createRole : function(dataString, remoteIpString, remotePort) {
+    createRole : function(dataString, sid) {
 
         let roleInfo = JSON.parse(dataString);
 
@@ -144,7 +144,7 @@ module.exports = {
 
         let serverId = roleInfo.serverId;
 
-        let username = GD.ONLINE_ACCOUNT[remoteIpString];
+        let username = GD.ONLINE_ACCOUNT[sid];
 
         let roleState = new ClassFactory.RoleState();
 
@@ -160,20 +160,20 @@ module.exports = {
 
             if (result) {
 
-                this.emitTo("CreateRoleFailRecv", "角色名已存在", remoteIpString);
+                this.emitBackTo("CreateRoleFailRecv", "角色名已存在", sid);
 
             } else {
 
                 mongoDB.insertOne("role", roleState, (err, result) => {
 
-                    this.emitTo("CreateRoleRecv", JSON.stringify(roleState), remoteIpString);
+                    this.emitBackTo("CreateRoleRecv", JSON.stringify(roleState), sid);
         
                 });
             }
         })
     },
 
-    deleteRole : function(dataString, remoteIpString, remotePort) {
+    deleteRole : function(dataString, sid) {
 
         let roleName = dataString;
 
@@ -181,35 +181,35 @@ module.exports = {
 
         mongoDB.deleteOne("role", delObj, (err, result) => {
 
-            this.emitTo("DeleteRoleRecv", "", remoteIpString);
+            this.emitBackTo("DeleteRoleRecv", "", sid);
 
         });
 
     },
 
-    enterGame : function(dataString, remoteIpString, remotePort) {
+    enterGame : function(dataString, sid) {
 
         let roleState = JSON.parse(dataString); // TODO : 这里有可能被利用
 
-        let username = GD.ONLINE_ACCOUNT[remoteIpString];
+        let username = GD.ONLINE_ACCOUNT[sid];
 
         GD.ONLINE_ROLE[username] = roleState;
 
-        this.emitTo("EnterGameRecv", "", remoteIpString);
+        this.emitBackTo("EnterGameRecv", "", sid);
 
     },
 
-    showRoom : function(dataString, remoteIpString, remotePort) {
+    showRoom : function(dataString, sid) {
 
         let serverId = parseInt(dataString);
 
         let roomSendInfo = new ClassFactory.RoomSendInfo(serverId);
 
-        this.emitTo("ShowRoomRecv", JSON.stringify(roomSendInfo), remoteIpString);
+        this.emitBackTo("ShowRoomRecv", JSON.stringify(roomSendInfo), sid);
 
     },
 
-    compare : function(dataString, remoteIpString, remotePort) {
+    compare : function(dataString, sid) {
 
         // dataString = int code
         // code 1 : 1V1 / code 5 : 5V5 / code 50 : 50V50

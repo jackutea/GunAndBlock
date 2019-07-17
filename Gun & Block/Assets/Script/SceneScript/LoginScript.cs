@@ -41,8 +41,6 @@ public class LoginScript : MonoBehaviour {
         // 点击登录
         loginBtn.onClick.AddListener(() => {
 
-            Debug.Log("点击登录");
-
             if (username.text != "" && username.text != null) {
 
                 UserSendInfo user = new UserSendInfo(username.text, password.text);

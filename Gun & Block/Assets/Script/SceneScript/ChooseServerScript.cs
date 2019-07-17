@@ -82,7 +82,7 @@ public class ChooseServerScript : MonoBehaviour {
 
                 ServerDataScript.choosenServerId = int.Parse(chooseServerId.text);
                 
-                Debug.Log("已选中服务器 :" + chooseServerId.text);
+                // Debug.Log("已选中服务器 :" + chooseServerId.text);
 
             });
 

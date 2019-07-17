@@ -2,7 +2,7 @@ class RoomInfo {
 
     constructor(roomName) {
 
-        this.roomId = RoomInfo.prototype.count;
+        this.roomId = RoomInfo.count;
 
         this.roomName = (roomName === undefined) ? this.roomId.toString() + "号房间" : roomName;
 
@@ -12,10 +12,10 @@ class RoomInfo {
 
         this.rightAllyList = [];
 
-        RoomInfo.prototype.count += 1;
+        RoomInfo.count += 1;
     }
 }
 
-RoomInfo.prototype.count = 0;
+RoomInfo.count = 0;
 
 module.exports = RoomInfo;

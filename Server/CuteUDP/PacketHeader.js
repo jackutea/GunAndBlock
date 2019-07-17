@@ -1,8 +1,10 @@
+var CuteUDP = require("./CuteUDP");
+
 class PacketHeader {
 
     constructor(eventName, packetCount, packetStringSize) {
 
-        this.i = PacketHeader.prototype.count; // headerId
+        this.i = PacketHeader.count; // headerId
         
         this.n = eventName; // 事件名
 
@@ -10,11 +12,11 @@ class PacketHeader {
 
         this.s = packetStringSize; // 小包总字节
 
-        PacketHeader.prototype.count += 1;
+        PacketHeader.count += 1;
 
     }
 }
 
-PacketHeader.prototype.count = 0;
+PacketHeader.count = 0;
 
 module.exports = PacketHeader;

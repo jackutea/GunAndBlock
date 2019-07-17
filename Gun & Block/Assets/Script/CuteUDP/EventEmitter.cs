@@ -51,6 +51,17 @@ public class EventEmitter {
 
     }
 
+    //注册事件 T0, T1, T2, T3
+    public void on<T0, T1, T2, T3> (string eventype, Action<T0, T1, T2, T3> call) {
+
+        if (!isListening(eventype, call))
+
+            return;
+
+        eventDictionary[eventype] = (Action<T0, T1, T2, T3>)eventDictionary[eventype] + call;
+
+    }
+
     //判断事件是否在字典
     public bool isListening(string eventype, Delegate call) {
 
@@ -112,6 +123,17 @@ public class EventEmitter {
             return;
 
         eventDictionary[eventype] = (Action<T0, T1, T2>)eventDictionary[eventype] - call;
+
+    }
+
+    //移除事件 T0, T1, T2, T3
+    public void removeListener<T0, T1, T2, T3>(string eventype, Action<T0, T1, T2, T3> call) {
+
+        if (!eventDictionary.ContainsKey(eventype))
+
+            return;
+
+        eventDictionary[eventype] = (Action<T0, T1, T2, T3>)eventDictionary[eventype] - call;
 
     }
 
@@ -224,6 +246,37 @@ public class EventEmitter {
                 continue;
         
             call(arg1, arg2, arg3);
+        
+        }
+    }
+
+    //触发事件 T0, T1, T2, T3
+    public void invokeEvent<T0, T1, T2, T3>(string eventype, T0 arg1, T1 arg2, T2 arg3, T3 arg4) {
+
+        Delegate d = null;
+        
+        if (!eventDictionary.TryGetValue(eventype, out d)) {
+            
+            Debug.Log(eventype + "未监听");
+        
+            return;
+        }
+        
+        if (d == null)
+        
+            return;
+        
+        Delegate[] calls = d.GetInvocationList();
+        
+        for (int i = 0; i < calls.Length; i += 1) {
+        
+            Action<T0, T1, T2, T3> call = calls[i] as Action<T0, T1, T2, T3>;
+        
+            if (call == null)
+        
+                continue;
+        
+            call(arg1, arg2, arg3, arg4);
         
         }
     }

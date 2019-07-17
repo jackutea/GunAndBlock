@@ -3,7 +3,7 @@ class ServerInfo {
 
     constructor(serverName) {
 
-        this.serverId = ServerInfo.prototype.count;
+        this.serverId = ServerInfo.count;
 
         this.serverName = (serverName === undefined) ? this.serverId.toString() + "区" : serverName;
         
@@ -11,7 +11,7 @@ class ServerInfo {
 
         this.roomJson = {};
 
-        ServerInfo.prototype.count += 1;
+        ServerInfo.count += 1;
     }
 
     getOnlineUserCount() {
@@ -32,6 +32,6 @@ class ServerInfo {
     }
 }
 
-ServerInfo.prototype.count = 0;
+ServerInfo.count = 0;
 
 module.exports = ServerInfo;
