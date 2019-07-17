@@ -1,8 +1,6 @@
 var event = require("events");
 var udp = require("dgram");
 
-// var UDPSocketEvent = require("./UDPSocketEvent");
-
 var Packet = require("./Packet");
 var BasePacket = require("./BasePacket");
 
@@ -497,7 +495,7 @@ class CuteUDP extends event {
 
         let dataString = recvString.substring(1);
 
-        // console.log(dataString);
+        console.log(rinfo);
 
         switch (stateCode) {
 

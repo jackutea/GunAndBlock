@@ -189,7 +189,7 @@ module.exports = {
 
     enterGame : function(dataString, remoteIpString, remotePort) {
 
-        let roleState = JSON.parse(dataString);
+        let roleState = JSON.parse(dataString); // TODO : 这里有可能被利用
 
         let username = GD.ONLINE_ACCOUNT[remoteIpString];
 
@@ -207,5 +207,11 @@ module.exports = {
 
         this.emitTo("ShowRoomRecv", JSON.stringify(roomSendInfo), remoteIpString);
 
+    },
+
+    compare : function(dataString, remoteIpString, remotePort) {
+
+        // dataString = int code
+        // code 1 : 1V1 / code 5 : 5V5 / code 50 : 50V50
     }
 }

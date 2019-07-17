@@ -10,6 +10,7 @@ public class RoleState{
     public int inServerId = -1;
     public int level = 1;
     public int exp = 0;
+    public int rank = 0;
     public int score = 0;
     public bool isLeftAlly = true;
     public float life = 5;

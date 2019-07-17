@@ -7,18 +7,18 @@ using UnityEngine.SceneManagement;
 
 public class HomeScript : MonoBehaviour {
 
-    // 匹配面板
+    // TODO : 匹配面板
     public Button soloCompareBtn;
     public Button teamCompareBtn;
     public Button raidCompareBtn;
     public Button customRoomBtn;
-    // TODO : 明天写匹配功能
 
     // 角色信息面板
     public Text username;
     public Text roleName;
     public Text level;
     public Text exp;
+    public Text rank;
     public Text score;
     public Text life;
     public Text blockLife;
@@ -62,6 +62,8 @@ public class HomeScript : MonoBehaviour {
         level.text = "Lv : " + rs.level.ToString();
         
         exp.text = "经验值 : " + rs.exp.ToString();
+
+        rank.text = "段位 : " + rs.rank.ToString();
         
         score.text = "排位积分 : " + rs.score.ToString();
         

@@ -11,23 +11,23 @@ var cuteUDP = new CuteUDP("127.0.0.1", 9999, 10000);
 // 3. Ping功能
 // 4. 水晶
 
-cuteUDP.on("Login", cuteEvent.login);
+cuteUDP.on("Login", cuteEvent.login); // 登录
 
-cuteUDP.on("Register", cuteEvent.register);
+cuteUDP.on("Register", cuteEvent.register); // 注册
 
-cuteUDP.on("ShowRole", cuteEvent.showRole);
+cuteUDP.on("ShowRole", cuteEvent.showRole); // 显示角色列表
 
-cuteUDP.on("CreateRole", cuteEvent.createRole);
+cuteUDP.on("CreateRole", cuteEvent.createRole); // 创建角色
 
-cuteUDP.on("DeleteRole", cuteEvent.deleteRole);
+cuteUDP.on("DeleteRole", cuteEvent.deleteRole); // 删除角色
 
-cuteUDP.on("EnterGame", cuteEvent.enterGame);
+cuteUDP.on("EnterGame", cuteEvent.enterGame); // 选定角色后进入游戏
 
-cuteUDP.on("ShowServer", cuteEvent.showServer);
+cuteUDP.on("ShowServer", cuteEvent.showServer); // 显示服务器列表
 
-cuteUDP.on("ShowRoom", cuteEvent.showRoom);
+cuteUDP.on("ShowRoom", cuteEvent.showRoom); // 显示服务器自定义房间
 
-
+cuteUDP.on("Compare", cuteEvent.compare); // 匹配
 
 // 开服 1 个
 for (let i = 0; i < 1; i += 1) {

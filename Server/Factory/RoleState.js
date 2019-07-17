@@ -12,6 +12,8 @@ class RoleState {
 
         this.exp = 0;
 
+        this.rank = 0;
+
         this.score = 0;
 
         this.isLeftAlly = true;
