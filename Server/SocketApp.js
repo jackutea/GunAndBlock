@@ -87,8 +87,8 @@ class SocketApp extends event {
 
         this.cuteUDP.on("ShowRoom", this.showRoomHallSend); // 显示服务器自定义房间
 
-        // Compare Cluster 负责处理        
-        this.cuteUDP.on("Compare", this.compareCompareSend); // 匹配
+        // Compare Cluster 负责处理
+        this.cuteUDP.on("Compare", this.compareCompareSend); // 匹配申请
 
     }
 
@@ -113,7 +113,9 @@ class SocketApp extends event {
         this.on("ShowRoom", this.showRoomHallBack); // 显示服务器自定义房间
 
         // Compare Cluster 处理完回传
-        this.on("Compare", this.compareCompareBack); //匹配
+        this.on("Compare", this.compareCompareBack); // 匹配申请
+
+        this.on("CompareSuccess", this.compareSucess); // 匹配成功
 
     }
 
@@ -280,6 +282,17 @@ class SocketApp extends event {
     compareCompareBack(dataString, sid) {
 
         this.cuteUDP.emitBackTo("CompareWaitRecv", dataString, sid);
+
+    }
+
+    // 匹配成功 —— 
+    // 向HALL请求玩家数据，成功后向BATTLE注入战斗数据，注入成功后，推送给客户端
+    compareSucess(dataString, sid) {
+
+        let sidArray = dataString; // 匹配成功的玩家数组 array[sid...]
+
+        // TODO 理论上这是第一次用到 brocast功能
+
 
     }
 }

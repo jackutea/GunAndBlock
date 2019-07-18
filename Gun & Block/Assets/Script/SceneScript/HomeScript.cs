@@ -72,8 +72,15 @@ public class HomeScript : MonoBehaviour {
 
     void compareSend(string modeCode) {
 
-        CuteUDPManager.cuteUDP.emitServer("Compare", modeCode);
+        if (PlayerDataScript.ROLE_STATE.isComparing) {
 
+            CuteUDPEvent.showAlertWindow("正在匹配中");
+
+        } else {
+
+            CuteUDPManager.cuteUDP.emitServer("Compare", modeCode);
+
+        }
     }
 
     void Update() {

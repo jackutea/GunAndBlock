@@ -15,6 +15,68 @@ class CompareApp extends event {
 
         this.initCompareClusterListener();
 
+        this.heartBeat = setInterval(this.compareHeartBeat, 1);
+
+    }
+
+    // 匹配循环
+    compareHeartBeat() {
+
+        // COMPARE_GD.COMPARE_STACK_LIST 键值对 serverId : levelStack
+        // levelStack 键值对 level or rank : array[modeCode0,1,2]
+        // levelStack[level] 键值对 modeCode : array[sid...]
+
+        let allServerStackList = COMPARE_GD.COMPARE_STACK_LIST
+
+        for (let serverId in allServerStackList) {
+
+            // 某一个服务器内的列表
+            let levelStack = allServerStackList[serverId];
+
+            for (let levelIndex in levelStack) {
+
+                // 某个等级的列表
+                let perLevelStack = levelStack[levelIndex];
+
+                for (let modeCode in perLevelStack) {
+
+                    // 某个匹配模式列表（1V1 5V5等）
+                    let perModeList = perLevelStack[modeCode];
+
+                    if (modeCode === "0") {
+
+                        // 如果1V1 模式列表内有超过2人，则拉出这两人
+                        if (perModeList.length >= 2) {
+
+                            let a = perModeList.shift();
+
+                            let b = perModeList.shift();
+
+                            console.log(a, "和", b, "匹配成功");
+
+                            process.send({ eventName: "CompareSuccess", dataString: [a, b], sid: "" });
+
+                        } else {
+
+                            // console.log("等级", levelIndex, "1V1人数不够");
+
+                        }
+                    }
+
+                }
+            }
+        }
+
+
+        // 遍历所有等级数组
+        // 如果1v1里有2人，拉出来
+
+        // 如果5V5里有10人，拉出来
+
+        // 如果50V50里有100人，拉出来
+
+        // 遍历所有天梯数组
+
     }
 
     // 初始化进程监听器
@@ -84,23 +146,17 @@ class CompareApp extends event {
 
         let level = roleState.level;
 
-        let rank = roleState.rank;
-
-        let searchList;
+        let searchList = COMPARE_GD.COMPARE_STACK_LIST[serverId];
 
         let searchLevelIndex;
 
         if (level < 10) {
 
-            searchList = COMPARE_GD.COMPARE_STACK_LIST[serverId].levelStack;
-
             searchLevelIndex = level;
 
         } else {
 
-            searchList = COMPARE_GD.COMPARE_STACK_LIST[serverId].rankStack;
-
-            searchLevelIndex = rank;
+            searchLevelIndex = level + 10;
 
         }
 
