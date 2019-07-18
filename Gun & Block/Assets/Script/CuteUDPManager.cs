@@ -84,6 +84,8 @@ public class CuteUDPManager : MonoBehaviour {
 
     void initPrivateVoid() {
 
+        // 用Queue队列解决Unity子线程无法调用主线程UI的方法
+        // 服务器回传 登录
         cuteUDP.on<string, string>("LoginRecv", (string dataString, string sid) => {
 
             addQueue(CuteUDPEvent.onLoginRecv, dataString, sid);
@@ -91,44 +93,56 @@ public class CuteUDPManager : MonoBehaviour {
         
         });
 
+        // 服务器回传 显示服务器
+        cuteUDP.on<string, string>("ShowServerRecv", (string dataString, string sid) => {
+
+            addQueue(CuteUDPEvent.onShowServerRecv, dataString, sid);
+            
+        });
+
+        // 服务器回传 显示自有角色
         cuteUDP.on<string, string>("ShowRoleRecv", (string dataString, string sid) => {
 
             addQueue(CuteUDPEvent.onShowRoleRecv, dataString, sid);
 
         });
 
+        // 服务器回传 创建角色成功
         cuteUDP.on<string, string>("CreateRoleRecv", (string dataString, string sid) => {
 
             addQueue(CuteUDPEvent.onCreateRoleRecv, dataString, sid);
 
         });
 
+        // 服务器回传 创建角色失败
         cuteUDP.on<string, string>("CreateRoleFailRecv", (string dataString, string sid) => {
 
             addQueue(CuteUDPEvent.onCreateRoleFailRecv, dataString, sid);
 
         });
 
+        // 服务器回传 删除角色
         cuteUDP.on<string, string>("DeleteRoleRecv", (string dataString, string sid) => {
 
             addQueue(CuteUDPEvent.onDeleteRoleRecv, dataString, sid);
 
         });
 
+        // 服务器回传 进入游戏
         cuteUDP.on<string, string>("EnterGameRecv", (string dataString, string sid) => {
 
             addQueue(CuteUDPEvent.onEnterGameRecv, dataString, sid);
 
         });
 
-        cuteUDP.on<string, string>("ShowServerRecv", (string dataString, string sid) => {
+        // 服务器回传 匹配等待
+        cuteUDP.on<string, string>("CompareWaitRecv", (string dataString, string sid) => {
 
-            // Action<string, string> act = CuteUDPEvent.onShowServerRecv;
+            addQueue(CuteUDPEvent.onCompareWaitRecv, dataString, sid);
 
-            addQueue(CuteUDPEvent.onShowServerRecv, dataString, sid);
-            
         });
 
+        // 服务器回传 显示自定义房间
         cuteUDP.on<string, string>("ShowRoomRecv", (string dataString, string sid) => {
 
             addQueue(CuteUDPEvent.onShowRoomRecv, dataString, sid);

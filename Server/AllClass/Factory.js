@@ -7,24 +7,22 @@ var ServerInfo = require("./ServerInfo");
 var AccountState = require("./AccountState");
 var RoleState = require("./RoleState");
 
-var ClassFactory = {
+class Factory {}
 
-    LoginSendInfo : LoginSendInfo,
+Factory.LoginSendInfo = LoginSendInfo,
 
-    RoomInfo : RoomInfo,
+Factory.RoomInfo = RoomInfo,
 
-    RoomSendInfo : RoomSendInfo,
+Factory.RoomSendInfo = RoomSendInfo,
 
-    RoleListSendInfo : RoleListSendInfo,
+Factory.RoleListSendInfo = RoleListSendInfo,
 
-    ServerSendInfo : ServerSendInfo,
+Factory.ServerSendInfo = ServerSendInfo,
 
-    ServerInfo : ServerInfo,
+Factory.ServerInfo = ServerInfo,
 
-    AccountState : AccountState,
+Factory.AccountState = AccountState,
 
-    RoleState : RoleState
+Factory.RoleState = RoleState
 
-}
-
-module.exports = ClassFactory;
+module.exports = Factory;

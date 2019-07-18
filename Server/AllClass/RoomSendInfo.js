@@ -1,4 +1,4 @@
-var GD = require("../Datas/GD");
+var GD = require("../GlobalData/HALL_GD");
 
 class RoomSendInfo {
 

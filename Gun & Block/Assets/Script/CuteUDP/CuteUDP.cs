@@ -112,7 +112,7 @@ namespace CuteUDPApp {
 
             socketId = getSocketId();
             
-            Debug.LogWarning(socketId);
+            Debug.Log("当前 SocketId : " + socketId);
             
             bool socketBindState = false;
 
@@ -259,16 +259,6 @@ namespace CuteUDPApp {
 
             emitTo(eventName, obj, ip, port, sid);
 
-        }
-
-        // 广播消息(发包头)
-        public void emitBrocast(string eventName, string obj, string[] ipGroup) {
-
-            foreach (string ip in ipGroup) {
-
-                emitTo(eventName, obj, ip);
-
-            }
         }
 
         // 向服务端发消息

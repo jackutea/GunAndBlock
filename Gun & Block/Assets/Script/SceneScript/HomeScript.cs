@@ -43,7 +43,37 @@ public class HomeScript : MonoBehaviour {
     void Start() {
 
         showRoleInfo();
+
+        soloCompareBtn.onClick.AddListener(() => {
+
+            compareSend("0");
+
+        });
+
+        teamCompareBtn.onClick.AddListener(() => {
+
+            compareSend("1");
+
+        });
+
+        raidCompareBtn.onClick.AddListener(() => {
+
+            compareSend("2");
+
+        });
+
+        customRoomBtn.onClick.AddListener(() => {
+
+            CuteUDPEvent.showAlertWindow("暂不支持自定义房间模式");
+
+        });
         
+    }
+
+    void compareSend(string modeCode) {
+
+        CuteUDPManager.cuteUDP.emitServer("Compare", modeCode);
+
     }
 
     void Update() {

@@ -13,6 +13,7 @@ public class RoleState{
     public int rank = 0;
     public int score = 0;
     public bool isLeftAlly = true;
+    public bool isComparing = false;
     public float life = 5;
     public float blockLife = 3;
     public float damage = 1;

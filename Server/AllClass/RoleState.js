@@ -17,6 +17,8 @@ class RoleState {
         this.score = 0;
 
         this.isLeftAlly = true;
+
+        this.isComparing = false;
         
         this.life = 5.0;
         

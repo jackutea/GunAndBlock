@@ -248,16 +248,6 @@ class CuteUDP extends event {
 
     }
 
-    // 广播消息（发包头）
-    emitBrocast(eventName, objStr, ipGroup) {
-
-        for (let ip in ipGroup) {
-
-            this.emitTo(eventName, objStr, ip);
-
-        }
-    }
-
     // 向服务端发消息
     emitServer(eventName, objStr) {
 

@@ -71,15 +71,6 @@ class CuteUDPEvent : MonoBehaviour {
 
     }
 
-    // 进入游戏回传
-    public static void onEnterGameRecv(string dataString, string sid) {
-
-        // Debug.Log("进入HOME");
-
-        SceneManager.LoadScene("Home");
-
-    }
-
     // 接收创建角色成功回传
     public static void onCreateRoleRecv(string dataString,string sid) {
 
@@ -94,7 +85,40 @@ class CuteUDPEvent : MonoBehaviour {
     // 创建角色失败回传
     public static void onCreateRoleFailRecv(string dataString, string sid) {
 
-        showAlertWindow(dataString);
+        showAlertWindow("角色名已存在");
+
+    }
+
+    // 进入游戏回传
+    public static void onEnterGameRecv(string dataString, string sid) {
+
+        // Debug.Log("进入HOME");
+
+        SceneManager.LoadScene("Home");
+
+    }
+
+    // 等待匹配回传
+    public static void onCompareWaitRecv(string dataString, string sid) {
+
+        PlayerDataScript.ROLE_STATE.isComparing = true;
+
+        showAlertWindow("正在匹配中"); // TODO ： 换成其他显示方式
+
+    }
+
+    // 取消匹配回传
+    public static void onCompareCancelRecv(string dataString, string sid) {
+
+        PlayerDataScript.ROLE_STATE.isComparing = false;
+
+    }
+
+    // 匹配成功回传
+    public static void onCompareSuccessRecv(string dataString, string sid) {
+
+        // dataString = class FieldInfo
+        PlayerDataScript.ROLE_STATE.isComparing = false;
 
     }
 
