@@ -4,7 +4,7 @@ var ServerInfo = require("../AllClass/ServerInfo");
 class HALL_GD {}
 
 // 静态属性
-HALL_GD.ONLINE_ACCOUNT = {}; // 在线账号 IP : AccountState
+HALL_GD.ONLINE_ACCOUNT = {}; // 在线账号 sid : AccountState
 HALL_GD.ONLINE_ROLE = {}; // 在线角色 AccountState.username : RoleState
 HALL_GD.SERVER_LIST = {}; // 服务器列表 serverId : ServerInfo
 

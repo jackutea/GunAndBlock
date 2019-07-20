@@ -4,7 +4,7 @@ class MiniPacket {
 
         this.i = mid;
 
-        this.n = content;
+        this.n = content.toString();
     }
 }
 

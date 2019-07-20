@@ -1,4 +1,4 @@
-var GD = require("../GlobalData/HALL_GD");
+var HALL_GD = require("../GlobalData/HALL_GD");
 
 class ServerSendInfo {
 
@@ -14,9 +14,9 @@ class ServerSendInfo {
 
     loadServerList() {
 
-        for (let serverId in GD.SERVER_LIST) {
+        for (let serverId in HALL_GD.SERVER_LIST) {
 
-            let serverInfo = GD.SERVER_LIST[serverId];
+            let serverInfo = HALL_GD.SERVER_LIST[serverId];
 
             this.serverIdList.push(serverInfo.serverId);
 

@@ -22,14 +22,14 @@ class Packet {
         this.packetCode = "0";
 
         // 源内容
-        this.orginStr = orginStr;
+        this.orginStr = orginStr.toString();
         
         this.orginBytes = Buffer.from(this.orginStr, "utf-8");
         
         this.eventName = eventName;
 
         // 包头
-        this.packetHeader = null;
+        this.packetHeader = new PacketHeader(eventName);
         
         this.headerBytes = null;
 
@@ -53,8 +53,10 @@ class Packet {
         let len = this.orginStr.length;
 
         let nx = len / this.perLength;
-        
-        let n = (parseInt(nx) === nx && nx !== 0) ? parseInt(nx) : parseInt(nx) + 1;
+
+        let n = (parseInt(nx) === nx) ? parseInt(nx) : parseInt(nx) + 1;
+
+        if (len === 0) n = 1;
 
         let index = 0;
 
@@ -78,6 +80,8 @@ class Packet {
 
             let concated = Buffer.concat([Buffer.concat([codeByte, sidBytes], codeByte.length + sidBytes.length), sendBytes], totalLength);
 
+            this.packetHeader.a.push(s.length);
+
             this.miniPacketList.push(concated);
 
             index += this.perLength;
@@ -88,8 +92,6 @@ class Packet {
 
     getHeaderBytes() {
 
-        this.packetHeader = new PacketHeader(this.eventName, this.packetCount, this.packetStringSize);
-        
         let sendStr = JSON.stringify(this.packetHeader);
         
         let sendBytes = Buffer.from(sendStr, "utf-8");

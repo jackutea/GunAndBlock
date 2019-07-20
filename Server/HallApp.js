@@ -23,7 +23,7 @@ class HallApp extends event {
     // 初始化进程监听器
     initClusterListener() {
 
-        process.on("message", (msg) => {
+        cluster.worker.on("message", (msg) => {
 
             let eventName = msg.eventName;
 
@@ -37,6 +37,12 @@ class HallApp extends event {
 
         });
 
+        cluster.worker.on("error", (err) => {
+
+            console.log("HallApp Error :", err);
+
+        })
+
     }
 
     // 初始化全局变量
@@ -46,27 +52,65 @@ class HallApp extends event {
 
             process.send({ eventName: "InitCompareGD", dataString: HALL_GD.SERVER_LIST, sid: sid});
 
-            // process.send({ eventName: "InitBattleGD", dataString: HALL_GD, sid: sid});
+            process.send({ eventName: "InitBattleGD", dataString: "", sid: sid});
 
         });
 
     }
 
-    requireHallGD(dataString, sid) {
+    // 开始匹配 申请GD
+    requestHallGD(dataString, sid) {
 
-        process.send({ eventName: "RequireHallGD", dataString: {ONLINE_ACCOUNT: HALL_GD.ONLINE_ACCOUNT, ONLINE_ROLE: HALL_GD.ONLINE_ROLE}, sid: sid });
+        let modeCode = dataString;
+
+        let username = HALL_GD.ONLINE_ACCOUNT[sid];
+
+        HALL_GD.ONLINE_ROLE[username].inComparingMode = parseInt(modeCode); // 角色状态设为正在匹配中
+
+        process.send({ eventName: "RequestHallGD", dataString: {roleState: HALL_GD.ONLINE_ROLE[username]}, sid: sid });
+
+    }
+
+    // 匹配成功 主线程请求角色数组
+    requestRoleState(dataString, sid) {
+
+        let sidArray = dataString;
+
+        let roleArray = [];
+
+        for (let index in sidArray) {
+
+            let username = HALL_GD.ONLINE_ACCOUNT[sidArray[index]];
+
+            let role = HALL_GD.ONLINE_ROLE[username];
+
+            role.sid = sidArray[index];
+
+            roleArray.push(role);
+
+        }
+
+        process.send({ eventName: "RequestRoleState", dataString: roleArray, sid: "" });
 
     }
 
     // 初始化进程监听事件
     initHallClusterListener() {
 
-        // 处理非UDP
+        this.on("error", (err) => {
+
+            console.log("HallApp Event Error:", err);
+            
+        })
+
+        // 处理主线程请求
         this.on("InitHallGD", this.initHallGD);
 
-        this.on("RequireHallGD", this.requireHallGD);
+        this.on("RequestHallGD", this.requestHallGD);
 
-        // 处理UDP
+        this.on("RequestRoleState", this.requestRoleState);
+
+        // 处理客户端请求
         this.on("Register", this.register); // 注册
 
         this.on("Login", this.login); // 登录
@@ -88,198 +132,220 @@ class HallApp extends event {
     // 注册
     register(dataString, sid) {
 
-        let UserInfo = JSON.parse(dataString);
+        process.nextTick(() => {
 
-        let username = UserInfo.username;
+            let UserInfo = JSON.parse(dataString);
 
-        let password = UserInfo.password;
+            let username = UserInfo.username;
 
-        let usernameobj = {username : username};
+            let password = UserInfo.password;
 
-        mongoDB.findOne("account", usernameobj, (err, result) => {
+            let usernameobj = {username : username};
 
-            if (err) throw err;
+            mongoDB.findOne("account", usernameobj, (err, result) => {
 
-            if (!result) {
+                if (err) throw err;
 
-                console.log(username, "用户名不存在，可注册");
+                if (!result) {
 
-                let accountState = new Factory.AccountState();
+                    console.log(username, "用户名不存在，可注册");
 
-                accountState.username = username;
+                    let accountState = new Factory.AccountState();
 
-                accountState.password = password;
+                    accountState.username = username;
 
-                HALL_GD.ONLINE_ACCOUNT[sid] = username; // 添加玩家信息
+                    accountState.password = password;
 
-                mongoDB.insertOne("account", accountState, (err, result) => {
+                    HALL_GD.ONLINE_ACCOUNT[sid] = username; // 添加玩家信息
 
-                    let loginSendInfo = new Factory.LoginSendInfo(0, "注册成功，直接登录");
+                    mongoDB.insertOne("account", accountState, (err, result) => {
+
+                        let loginSendInfo = new Factory.LoginSendInfo(0, "注册成功，直接登录");
+
+                        process.send({ eventName: "Register", dataString: JSON.stringify(loginSendInfo), sid: sid })
+
+                    });
+
+                } else {
+
+                    let loginSendInfo = new Factory.LoginSendInfo(3, username + "已存在，无法注册");
 
                     process.send({ eventName: "Register", dataString: JSON.stringify(loginSendInfo), sid: sid })
 
-                });
-
-            } else {
-
-                let loginSendInfo = new Factory.LoginSendInfo(3, username + "已存在，无法注册");
-
-                process.send({ eventName: "Register", dataString: JSON.stringify(loginSendInfo), sid: sid })
-
-            }
-        });
+                }
+            });
+        })
     }
 
     // 登录
     login(dataString, sid) {
 
-        let UserInfo = JSON.parse(dataString);
+        process.nextTick(() => {
 
-        let username = UserInfo.username;
+            console.log("login event :", dataString);
 
-        let password = UserInfo.password;
+            let UserInfo = JSON.parse(dataString);
 
-        let usernameobj = {username : username};
+            let username = UserInfo.username;
 
-        mongoDB.findOne("account", usernameobj, (err, result) => {
+            let password = UserInfo.password;
 
-            if (err) throw err;
+            let usernameobj = {username : username};
 
-            if (!result) {
+            mongoDB.findOne("account", usernameobj, (err, result) => {
 
-                console.log(username, "用户名不存在");
+                if (err) throw err;
 
-                let loginSendInfo = new Factory.LoginSendInfo(2, "用户名不存在");
+                if (!result) {
 
-                process.send({ eventName: "Login", dataString: JSON.stringify(loginSendInfo), sid: sid});
+                    console.log(username, "用户名不存在");
 
-            } else {
-
-                if (result.password == password) {
-
-                    // console.log(username, "密码正确，直接登录");
-
-                    HALL_GD.ONLINE_ACCOUNT[sid] = username; // 添加玩家信息
-
-                    let loginSendInfo = new Factory.LoginSendInfo(0, "登录成功");
+                    let loginSendInfo = new Factory.LoginSendInfo(2, "用户名不存在");
 
                     process.send({ eventName: "Login", dataString: JSON.stringify(loginSendInfo), sid: sid});
 
                 } else {
 
-                    console.log(username, "密码错误");
+                    if (result.password == password) {
 
-                    let loginSendInfo = new Factory.LoginSendInfo(1, "密码错误");
+                        // console.log(username, "密码正确，直接登录");
 
-                    process.send({ eventName: "Login", dataString: JSON.stringify(loginSendInfo), sid: sid});
+                        HALL_GD.ONLINE_ACCOUNT[sid] = username; // 添加玩家信息
 
+                        let loginSendInfo = new Factory.LoginSendInfo(0, "登录成功");
+
+                        process.send({ eventName: "Login", dataString: JSON.stringify(loginSendInfo), sid: sid});
+
+                    } else {
+
+                        console.log(username, "密码错误");
+
+                        let loginSendInfo = new Factory.LoginSendInfo(1, "密码错误");
+
+                        process.send({ eventName: "Login", dataString: JSON.stringify(loginSendInfo), sid: sid});
+
+                    }
+                    
                 }
-                
-            }
-        });
+            });
+        })
     }
 
     // 显示服务器列表
     showServer(dataString, sid) {
 
-        let serverSendInfo = new Factory.ServerSendInfo();
+        process.nextTick(() => {
 
-        process.send({ eventName: "ShowServer", dataString: JSON.stringify(serverSendInfo), sid: sid});
+            let serverSendInfo = new Factory.ServerSendInfo();
 
+            process.send({ eventName: "ShowServer", dataString: JSON.stringify(serverSendInfo), sid: sid});
+                    
+        })
     }
 
     // 显示角色
     showRole(dataString, sid) {
 
-        let serverId = parseInt(dataString);
+        process.nextTick(() => {
 
-        let username = HALL_GD.ONLINE_ACCOUNT[sid];
+            let serverId = parseInt(dataString);
 
-        let findObj = {inServerId : serverId, username : username};
+            let username = HALL_GD.ONLINE_ACCOUNT[sid];
 
-        mongoDB.find("role", findObj, (err, result) => {
+            let findObj = {inServerId : serverId, username : username};
 
-            let roleList = new Factory.RoleListSendInfo();
+            mongoDB.find("role", findObj, (err, result) => {
 
-            for (let i = 0; i < result.length; i += 1) {
+                let roleList = new Factory.RoleListSendInfo();
 
-                let roleState = result[i];
+                for (let i = 0; i < result.length; i += 1) {
 
-                delete roleState["_id"];
+                    let roleState = result[i];
 
-                roleList.roles.push(roleState);
+                    delete roleState["_id"];
 
-            }
+                    roleList.roles.push(roleState);
 
-            process.send({ eventName: "ShowRole", dataString: JSON.stringify(roleList), sid: sid});
+                }
 
-        });
+                process.send({ eventName: "ShowRole", dataString: JSON.stringify(roleList), sid: sid});
+
+            });
+        })
     }
 
     // 创建角色
     createRole(dataString, sid) {
 
-        let roleInfo = JSON.parse(dataString);
+        process.nextTick(() => {
 
-        let roleName = roleInfo.roleName;
+            let roleInfo = JSON.parse(dataString);
 
-        let serverId = roleInfo.serverId;
+            let roleName = roleInfo.roleName;
 
-        let username = HALL_GD.ONLINE_ACCOUNT[sid];
+            let serverId = roleInfo.serverId;
 
-        let roleState = new Factory.RoleState();
+            let username = HALL_GD.ONLINE_ACCOUNT[sid];
 
-        roleState.roleName = roleName;
+            let roleState = new Factory.RoleState();
 
-        roleState.username = username;
+            roleState.roleName = roleName;
 
-        roleState.inServerId = serverId;
+            roleState.username = username;
 
-        let findObj = {roleName : roleName};
+            roleState.inServerId = serverId;
 
-        mongoDB.findOne("role", findObj, (err, result) => {
+            let findObj = {roleName : roleName};
 
-            if (result) {
+            mongoDB.findOne("role", findObj, (err, result) => {
 
-                process.send({ eventName: "CreateRole", dataString: "", sid: sid});
+                if (result) {
 
-            } else {
+                    process.send({ eventName: "CreateRole", dataString: "", sid: sid});
 
-                mongoDB.insertOne("role", roleState, (err, result) => {
+                } else {
 
-                    process.send({ eventName: "CreateRole", dataString: JSON.stringify(roleState), sid: sid});
-        
-                });
-            }
+                    mongoDB.insertOne("role", roleState, (err, result) => {
+
+                        process.send({ eventName: "CreateRole", dataString: JSON.stringify(roleState), sid: sid});
+            
+                    });
+                }
+            })
         })
     }
 
     // 删除角色
     deleteRole(dataString, sid) {
 
-        let roleName = dataString;
+        process.nextTick(() => {
 
-        let delObj = {roleName : roleName};
+            let roleName = dataString;
 
-        mongoDB.deleteOne("role", delObj, (err, result) => {
+            let delObj = {roleName : roleName};
 
-            process.send({ eventName: "DeleteRole", dataString: "", sid: sid});
+            mongoDB.deleteOne("role", delObj, (err, result) => {
 
-        });
+                process.send({ eventName: "DeleteRole", dataString: "", sid: sid});
 
+            });
+        })
     }
 
     // 进入游戏
     enterGame(dataString, sid) {
 
-        let roleState = JSON.parse(dataString); // TODO : 这里有可能被利用
+        process.nextTick(() => {
 
-        let username = HALL_GD.ONLINE_ACCOUNT[sid];
+            let roleState = JSON.parse(dataString); // TODO : 这里有可能被利用
 
-        HALL_GD.ONLINE_ROLE[username] = roleState;
+            let username = HALL_GD.ONLINE_ACCOUNT[sid];
 
-        process.send({ eventName: "EnterGame", dataString: "", sid: sid});
+            HALL_GD.ONLINE_ROLE[username] = roleState;
 
+            process.send({ eventName: "EnterGame", dataString: "", sid: sid});
+                    
+        })
     }
 
     // TODO : 显示自定义房间

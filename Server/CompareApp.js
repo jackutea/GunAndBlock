@@ -3,6 +3,15 @@ var cluster = require("cluster");
 
 var COMPARE_GD = require("./GlobalData/COMPARE_GD");
 
+class Rarray {
+
+    constructor() {
+
+        this.arr = [];
+
+    }
+}
+
 class CompareApp extends event {
 
     constructor() {
@@ -15,16 +24,21 @@ class CompareApp extends event {
 
         this.initCompareClusterListener();
 
-        this.heartBeat = setInterval(this.compareHeartBeat, 1);
+        setTimeout(this.compareHeartBeat, 1, this);
 
     }
 
     // 匹配循环
-    compareHeartBeat() {
+    compareHeartBeat(instance) {
 
         // COMPARE_GD.COMPARE_STACK_LIST 键值对 serverId : levelStack
         // levelStack 键值对 level or rank : array[modeCode0,1,2]
         // levelStack[level] 键值对 modeCode : array[sid...]
+
+        // 遍历所有堆
+        // 如果1v1里有2人，拉出来
+        // 如果5V5里有10人，拉出来
+        // 如果50V50里有100人，拉出来
 
         let allServerStackList = COMPARE_GD.COMPARE_STACK_LIST
 
@@ -67,22 +81,13 @@ class CompareApp extends event {
             }
         }
 
-
-        // 遍历所有等级数组
-        // 如果1v1里有2人，拉出来
-
-        // 如果5V5里有10人，拉出来
-
-        // 如果50V50里有100人，拉出来
-
-        // 遍历所有天梯数组
-
+        setTimeout(instance.compareHeartBeat, 1, instance);
     }
 
     // 初始化进程监听器
     initClusterListener() {
 
-        process.on("message", (msg) => {
+        cluster.worker.on("message", (msg) => {
 
             let eventName = msg.eventName;
 
@@ -94,6 +99,18 @@ class CompareApp extends event {
 
             // console.log("Compare App Recv : ", msg);
 
+        });
+
+        cluster.worker.on("error", (err) => {
+
+            console.log("CompareApp Error :", err);
+            
+        });
+
+        cluster.worker.on("disconnect", () => {
+
+            console.log("CompareApp disconnect");
+            
         });
 
     }
@@ -109,6 +126,12 @@ class CompareApp extends event {
     // 初始化监听事件
     initCompareClusterListener() {
 
+        this.on("error", (err) => {
+
+            console.log("CompareApp Event Error:", err);
+            
+        })
+
         // 处理非UDP
         this.on("InitCompareGD", this.initCompareGD);
 
@@ -120,50 +143,50 @@ class CompareApp extends event {
     // 先传参，再匹配
     preCompare(data, sid) {
 
-        let ONLINE_ACCOUNT = data.ONLINE_ACCOUNT;
+        process.nextTick(() => {
 
-        let ONLINE_ROLE = data.ONLINE_ROLE;
+            let roleState = data.roleState;
 
-        let dataString = data.dataString;
+            let dataString = data.dataString;
 
-        this.emit("Compare", ONLINE_ACCOUNT, ONLINE_ROLE, dataString, sid);
-        
+            this.emit("Compare", roleState, dataString, sid);
+                            
+        })
     }
 
     // 开始匹配
-    compare(ONLINE_ACCOUNT, ONLINE_ROLE, dataString, sid) {
+    compare(roleState, dataString, sid) {
 
-        // dataString = int code
-        // code 0 : 1V1 / code 1 : 5V5 / code 2 : 50V50
+        process.nextTick(() => {
 
-        let modeCode = parseInt(dataString);
+            // dataString = int code
+            // code 0 : 1V1 / code 1 : 5V5 / code 2 : 50V50
 
-        let username = ONLINE_ACCOUNT[sid];
+            let modeCode = parseInt(dataString);
 
-        let roleState = ONLINE_ROLE[username];
+            let serverId = roleState.inServerId;
 
-        let serverId = roleState.inServerId;
+            let level = roleState.level;
 
-        let level = roleState.level;
+            let searchList = COMPARE_GD.COMPARE_STACK_LIST[serverId];
 
-        let searchList = COMPARE_GD.COMPARE_STACK_LIST[serverId];
+            let searchLevelIndex;
 
-        let searchLevelIndex;
+            if (level < 10) {
 
-        if (level < 10) {
+                searchLevelIndex = level;
 
-            searchLevelIndex = level;
+            } else {
 
-        } else {
+                searchLevelIndex = level + 10;
 
-            searchLevelIndex = level + 10;
+            }
 
-        }
+            searchList[searchLevelIndex][modeCode].push(sid);
 
-        searchList[searchLevelIndex][modeCode].push(sid);
-
-        process.send({ eventName: "Compare", dataString: "", sid: sid })
-
+            process.send({ eventName: "Compare", dataString: modeCode.toString(), sid: sid })
+                    
+        })
     }
 }
 

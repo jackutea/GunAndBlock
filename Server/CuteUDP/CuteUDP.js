@@ -2,6 +2,7 @@ var event = require("events");
 var udp = require("dgram");
 
 var Packet = require("./Packet");
+var PacketHeader = require("./PacketHeader");
 var BasePacket = require("./BasePacket");
 var IpInfo = require("./IpInfo");
 
@@ -24,7 +25,7 @@ class CuteUDP extends event {
         this.remotePort = _remotePort; // 远程接收端口
 
         // CuteUDP 配置
-        this.abortTimeMs = 3000; // 总超时弃发(默认3秒)
+        this.abortTimeMs = 5000; // 总超时弃发(默认5秒)
 
         this.perLength = 128;
 
@@ -52,105 +53,110 @@ class CuteUDP extends event {
         this.initPrivateFunc();
 
         // 启动发送心跳
-        this.sendInterval = setInterval(() => {
+        setTimeout(this.sendHearBeat, 1, this);
+    }
 
-            // 更新当前时间
-            this.nowTimeSample = (new Date()).valueOf();
-    
-            // 待收列表超时检测
-            let recvJson = this.recvJson;
-    
-            if (recvJson && Object.keys(recvJson).length > 0) {
-    
-                let ipList = Object.keys(recvJson);
-    
-                for (let i = 0; i < ipList.length; i += 1) {
-    
-                    let ip = ipList[i];
-    
-                    let currentBasePacket = this.getCurrentPacket(recvJson, ip);
-    
-                    if (!currentBasePacket) continue;
+    sendHearBeat(instance) {
 
-                    if (currentBasePacket.recvMiniCount == currentBasePacket.packetHeader.c && currentBasePacket.recvMiniSize == currentBasePacket.packetHeader.s) continue;
-    
-                    let timeGap = parseInt(this.nowTimeSample - currentBasePacket.recvTimeSample);
-    
-                    if (timeGap > this.abortTimeMs) {
-    
-                        delete recvJson[ip];
-    
-                        console.log("超时", this.abortTimeMs, "ms，清空", ip, "所有待收包");
-    
-                    }
+        // 更新当前时间
+        instance.nowTimeSample = (new Date()).valueOf();
+
+        // 待收列表超时检测
+        let recvJson = instance.recvJson;
+
+        if (recvJson && Object.keys(recvJson).length > 0) {
+
+            let keyList = Object.keys(recvJson);
+
+            for (let i = 0; i < keyList.length; i += 1) {
+
+                let sid = keyList[i];
+
+                let currentBasePacket = instance.getCurrentPacket(recvJson, sid);
+
+                if (!currentBasePacket) continue;
+
+                if (currentBasePacket.recvMiniSize >= PacketHeader.getArraySize(currentBasePacket.packetHeader.a)) continue;
+
+                let timeGap = parseInt(instance.nowTimeSample - currentBasePacket.recvTimeSample);
+
+                if (timeGap > instance.abortTimeMs) {
+
+                    delete recvJson[sid];
+
+                    console.log("超时", instance.abortTimeMs, "ms，清空", sid, "所有待收包");
+
                 }
             }
-    
-            // 待发列表检测（重发包头和小包）
-            let sendJson = this.sendJson;
-    
-            if (!sendJson) return;
-    
-            let ipList = Object.keys(sendJson);
-    
-            if (ipList.length <= 0) return;
-    
-            for (let i = 0; i < ipList.length; i += 1) {
-    
-                let ip = ipList[i];
-    
-                let currentPacket = this.getCurrentPacket(sendJson, ip);
-    
-                if (!currentPacket) continue;
-    
-                let timeGap = parseInt(this.nowTimeSample - currentPacket.sendTimeSample);
-    
-                if (currentPacket.packetHeaderRecvState == true) {
-    
-                    if (currentPacket.miniPacketListRecvState == true) {
+        }
 
-                        //数据齐全，删掉上个包头
-                        delete this.sendJson[ip][currentPacket.packetHeader.i];
+        // 待发列表检测（重发包头和小包）
+        let sendJson = instance.sendJson;
 
-                        continue;
-                    }
-    
-                    // 在一定时间内，重发未被接收的小包
-                    if (timeGap % this.repeatMiniTimeMs == 0) {
-    
-                        for (let o = 0; o < currentPacket.miniPacketList.length; o += 1) {
-    
-                            let hasStr = currentPacket.miniPacketCheckList[o];
-    
-                            if (hasStr === undefined) {
-    
-                                // 发未被接收的小包
-                                this.socket.send(currentPacket.miniPacketList[o], currentPacket.toPort, currentPacket.toIp, this.sendMiniCallBack(currentPacket.miniPacketList[o]));
-    
-                            }
-                        }
+        if (!sendJson) return;
+
+        let keyList = Object.keys(sendJson);
+
+        if (keyList.length <= 0) return;
+
+        for (let i = 0; i < keyList.length; i += 1) {
+
+            let ipOrSid = keyList[i];
+
+            let currentPacket = instance.getCurrentPacket(sendJson, ipOrSid);
+
+            if (!currentPacket) continue;
+
+            let timeGap = parseInt(instance.nowTimeSample - currentPacket.sendTimeSample);
+
+            if (currentPacket.packetHeaderRecvState == true) {
+
+                if (currentPacket.miniPacketListRecvState == true) {
+
+                    //数据齐全，删掉上个包头
+                    delete instance.sendJson[ipOrSid][currentPacket.packetHeader.i];
+
+                    if (Object.keys(instance.sendJson[ipOrSid]).length == 0) {
+
+                        delete instance.sendJson[ipOrSid];
+
                     }
 
                 } else {
 
-                    if (timeGap % this.repeatHeaderTimeMs == 0) {
+                    // 在一定时间内，重发未被接收的小包
+                    if (timeGap % instance.repeatMiniTimeMs == 0) {
+
+                        let o = 0;
+
+                        instance.repeatSendMini(o, currentPacket);
     
-                        // 隔一段时间 发送包头
-                        this.socket.send(currentPacket.headerBytes, 0, currentPacket.headerBytes.length, currentPacket.toPort, currentPacket.toIp, this.sendHeaderCallBack(currentPacket.packetHeader.i));
-        
                     }
+
                 }
+
+            } else {
+
+                if (timeGap % instance.repeatHeaderTimeMs == 0) {
+
+                    // 隔一段时间 发送包头
+                    instance.socket.send(currentPacket.headerBytes, 0, currentPacket.headerBytes.length, currentPacket.toPort, currentPacket.toIp, instance.sendHeaderCallBack);
     
-                if (timeGap > this.abortTimeMs) {
-    
-                    delete sendJson[ip];
-    
-                    console.log("超时", this.abortTimeMs, "清空 ", ip, " 要发的包");
-    
-                    continue;
                 }
             }
-        }, 1);
+
+            if (timeGap > instance.abortTimeMs) {
+
+                delete sendJson[ipOrSid];
+
+                console.log("超时", instance.abortTimeMs, "清空 ", ipOrSid, " 要发的包");
+
+                continue;
+            }
+        }
+
+        setTimeout(instance.sendHearBeat, 1, instance);
+
     }
 
     initSocketFunc() {
@@ -163,7 +169,17 @@ class CuteUDP extends event {
         
         this.socket.on("close", this.onClose);
 
-        this.socket.bind(this.localPort);
+        this.socket.bind({
+
+            port: this.localPort,
+
+            exclusive: true,
+
+        }, () => {
+
+            console.log(this.localPort, "端口绑定成功");
+
+        });
 
     }
 
@@ -181,7 +197,7 @@ class CuteUDP extends event {
         
         this.on("fullPacketRecieved", this.fullPacketRecieved); // 收到小包齐全确认
         
-        this.on("abortPacket", this.abortPacket); // 收到弃发请求
+        this.on("requestWrongMini", this.requestWrongMini); // 收到弃发请求
 
     }
 
@@ -200,40 +216,67 @@ class CuteUDP extends event {
     // 向单体发消息（发包头）
     emitTo(eventName, objStr, ipStr, port, sid) {
 
-        let ipOrSocketId;
+        process.nextTick(() => {
+        
+            let ipOrSocketId;
 
-        if (sid !== undefined && this.socketIdToIpInfo[sid]) {
+            if (sid !== undefined && this.socketIdToIpInfo[sid]) {
 
-            ipOrSocketId = sid;
+                ipOrSocketId = sid;
 
-            ipStr = this.socketIdToIpInfo[sid].ip;
+                ipStr = this.socketIdToIpInfo[sid].ip;
 
-            port = this.socketIdToIpInfo[sid].port;
+                port = this.socketIdToIpInfo[sid].port;
 
-        } else {
+            } else {
 
-            ipOrSocketId = ipStr;
+                ipOrSocketId = ipStr;
 
-            port = (port === undefined) ? this.remotePort : port;
+                port = (port === undefined) ? this.remotePort : port;
 
-        }
+            }
 
-        let sendJson = this.sendJson;
+            let sendJson = this.sendJson;
 
-        if (!sendJson[ipOrSocketId])
+            if (!sendJson[ipOrSocketId])
 
-            sendJson[ipOrSocketId] = new Object();
+                sendJson[ipOrSocketId] = new Object();
 
-        let packet = new Packet(eventName, objStr, ipStr, port);
+            let packet = new Packet(eventName, objStr, ipStr, port);
 
-        if (!sendJson[ipOrSocketId][packet.packetHeader.i]) {
+            if (!sendJson[ipOrSocketId][packet.packetHeader.i]) {
 
-            sendJson[ipOrSocketId][packet.packetHeader.i] = packet;
+                sendJson[ipOrSocketId][packet.packetHeader.i] = packet;
 
-            this.socket.send(packet.headerBytes, 0, packet.headerBytes.length, packet.toPort, packet.toIp, this.sendHeaderCallBack(packet.packetHeader.i));
+                this.socket.send(packet.headerBytes, packet.toPort, packet.toIp, this.sendHeaderCallBack);
 
-            console.log("正在发送：", packet.packetHeader.i, ":", objStr, " 至", ipStr, ":", port, "的", eventName, "字符串长度", packet.orginStr.length);
+                // console.log("发包头", packet.packetHeader.a, "内容", packet.orginStr);
 
+            }
+
+        })
+    }
+
+    // 向 sidArray 列表内所有人广播
+    emitBrocast(eventName, objStr, sidArray, notSendMineSid) {
+        
+        for (let index = 0; index < sidArray.length; index += 1) {
+
+            let sid = sidArray[index];
+
+            if (notSendMineSid) {
+
+                if (sid != notSendMineSid) {
+
+                    this.emitBackTo(eventName, objStr, sid);
+
+                }
+
+            } else {
+
+                this.emitBackTo(eventName, objStr, sid);
+
+            }
         }
     }
 
@@ -258,14 +301,44 @@ class CuteUDP extends event {
     // 向发送者反馈状态
     responseState(stateCode, obj, ipStr, ipPort) {
 
-        let sendStr = stateCode + CuteUDP.socketId + obj.toString();
+        process.nextTick(() => {
+        
+            let sendStr = stateCode + CuteUDP.socketId + obj.toString();
 
-        let sendBytes = Buffer.from(sendStr, "utf-8");
+            let sendBytes = Buffer.from(sendStr, "utf-8");
 
-        this.socket.send(sendBytes, 0, sendBytes.length, ipPort, ipStr, this.sendResponseStateBack(sendStr));
+            this.socket.send(sendBytes, 0, sendBytes.length, ipPort, ipStr, this.sendResponseStateBack);
 
-        // console.log("发送反馈码：", stateCode, "内容：", obj.toString());
+            // console.log("发送反馈码：", stateCode, "内容：", obj.toString());
+            
+        })
+    }
 
+    // 循环发小包 递归
+    repeatSendMini(index, currentPacket) {
+
+        process.nextTick(() => {
+        
+            if (index < currentPacket.miniPacketList.length) {
+
+                let mid = currentPacket.miniPacketList[index].i;
+
+                let hasStr = currentPacket.miniPacketCheckList[mid];
+            
+                if (hasStr !== "1") {
+
+                    this.socket.send(currentPacket.miniPacketList[index], currentPacket.toPort, currentPacket.toIp, (err, byte) => {
+
+                        // console.log("发送小包id", index, "包头", currentPacket.packetHeader.i, " 小包长:", byte);
+
+                        index += 1;
+
+                        this.repeatSendMini(index, currentPacket);
+
+                    });
+                }
+            }
+        })
     }
 
     // 0 收到新包头
@@ -273,208 +346,267 @@ class CuteUDP extends event {
 
         // console.log("收到反馈码 0 新包头 id: ", dataString, "来自", ipStr, ":", ipPort);
 
-        let packetHeader = JSON.parse(dataString);
+        process.nextTick(() => {
 
-        let recvJson = this.recvJson;
+            let packetHeader = JSON.parse(dataString);
 
-        if (!recvJson[sid]) {
+            let recvJson = this.recvJson;
 
-            recvJson[sid] = new Object();
+            if (!recvJson[sid]) {
+
+                recvJson[sid] = new Object();
+                
+            }
+
+            this.socketIdToIpInfo[sid] = new IpInfo(ipStr, ipPort);
+
+            let basePacket = new BasePacket(packetHeader, ipStr, ipPort);
+
+            let headerId = packetHeader.i;
             
-        }
+            if (!recvJson[sid][headerId]) {
 
-        this.socketIdToIpInfo[sid] = new IpInfo(ipStr, ipPort);
+                recvJson[sid][headerId] = basePacket;
 
-        let basePacket = new BasePacket(packetHeader, ipStr, ipPort);
+            }
 
-        let headerId = packetHeader.i;
-        
-        if (!recvJson[sid][headerId]) {
+            // 如果是空包，直接触发事件
+            if (packetHeader.a.length === 0) {
 
-            recvJson[sid][headerId] = basePacket;
+                // 触发自定义事件
+                this.emit(packetHeader.n, "", sid);
 
-        }
+                delete this.recvJson[sid][packetHeader.i];
 
-        // 反馈收到新包头
-        this.responseState("1", headerId, ipStr, ipPort);
+                if (Object.keys(this.recvJson[sid]).length == 0) {
+
+                    delete this.recvJson[sid];
+
+                }
+
+                // 发送小包齐全声明
+                this.responseState("4", packetHeader.i, ipStr, ipPort);
+
+                return;
+
+            }
+
+            // 反馈收到新包头
+            this.responseState("1", headerId, ipStr, ipPort);
+
+        })
 
     }
 
     // 1 收到包头确认
     headerRecieved(dataString, ipStr, ipPort, sid) {
 
-        // dataString 即 headerId === PacketHeader.i
-        let headerId = parseInt(dataString);
+        process.nextTick(() => {
 
-        let sendJson = this.sendJson;
+            // dataString 即 headerId === PacketHeader.i
+            let headerId = parseInt(dataString);
 
-        let ipOrSocketId = (sendJson[sid]) ? sid : ipStr;
+            let sendJson = this.sendJson;
 
-        if (sendJson[ipOrSocketId]) {
+            let ipOrSocketId = (sendJson[sid]) ? sid : ipStr;
 
-            if (sendJson[ipOrSocketId][headerId]) {
+            if (sendJson[ipOrSocketId]) {
 
-                // console.log("收到反馈码 1 包头 :", headerId, "已被对方接收");
+                if (sendJson[ipOrSocketId][headerId]) {
 
-                let currentPacket = sendJson[ipOrSocketId][headerId]
+                    // console.log("收到反馈码 1 包头 :", headerId, "已被对方接收");
 
-                currentPacket.packetHeaderRecvState = true;
-                
-                // 开始发小包（先一次性全发）
-                for (let i = 0; i < currentPacket.packetCount; i += 1) {
+                    let currentPacket = sendJson[ipOrSocketId][headerId]
 
-                    this.socket.send(currentPacket.miniPacketList[i], ipPort, ipStr, this.sendMiniCallBack(currentPacket.miniPacketList[i]));
+                    currentPacket.packetHeaderRecvState = true;
 
-                    // console.log("正在发小包", i);
+                    // 开始发小包（先一次性全发）
+                    let i = 0;
+
+                    this.repeatSendMini(i, currentPacket);
+                    
+                } else {
+
+                    // console.log("收到反馈码 1 包头 :", headerId, "，但该包头已处理过");
 
                 }
 
             } else {
 
-                // console.log("收到反馈码 1 包头 :", headerId, "，但该包头已处理过");
+                // console.log("收到反馈码 1 包头 id : " + headerId + "，但这是一个奇怪的IP地址");
 
             }
-
-        } else {
-
-            // console.log("收到反馈码 1 包头 id : " + headerId + "，但这是一个奇怪的IP地址");
-
-        }
+        })
     }
 
     // 2 收到新小包 MiniPacket 开始拼接
     jointPacket(dataString, ipStr, ipPort, sid) {
 
-        let miniPacket = JSON.parse(dataString);
+        process.nextTick(() => {
 
-        // 发送已收到的小包序号
-        this.responseState("3", miniPacket.i, ipStr, ipPort);
+            let miniPacket = JSON.parse(dataString);
 
-        let currentBasePacket = this.getCurrentPacket(this.recvJson, sid);
+            let currentBasePacket = this.getCurrentPacket(this.recvJson, sid);
 
-        if (currentBasePacket) {
+            if (currentBasePacket) {
 
-            // console.log("收到反馈码 2 新小包", miniPacket.i, ":", miniPacket.n);
+                let ph = currentBasePacket.packetHeader;
 
-            // 如果未计算过该 小包
-            if (currentBasePacket.jointStr[miniPacket.i] === undefined) {
+                let mid = miniPacket.i;
 
-                currentBasePacket.recvMiniCount += 1;
+                let declareSize = ph.a[mid];
 
-                currentBasePacket.recvMiniSize += miniPacket.n.length;
+                let recvSize = miniPacket.n.length;
 
-                // 在字符组加入该小包
-                currentBasePacket.jointStr[miniPacket.i] = miniPacket.n;
+                // console.log("接收大小 / 声明大小 ： ", recvSize, "/", declareSize);
 
-            }
+                if (recvSize != declareSize) {
 
-            // 如果长度和数量已收完，停止接收
-            if (currentBasePacket.recvMiniCount == currentBasePacket.packetHeader.c && currentBasePacket.recvMiniSize == currentBasePacket.packetHeader.s) {
-
-                // 如果是空包，直接触发事件
-                if (currentBasePacket.packetHeader.c === 0) {
-
-                    // console.log("触发事件", currentBasePacket.packetHeader.n);
-
-                    // 触发自定义事件
-                    this.emit(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, sid);
-
-                    // 触发完删除旧包头
-                    delete this.recvJson[sid][currentBasePacket.packetHeader.i];
-
-                    // 发送小包齐全声明
-                    this.responseState("4", currentBasePacket.packetHeader.i, ipStr, ipPort);
+                    // TODO 请求补发
+                    this.responseState("5", mid, ipStr, ipPort);
 
                     return;
                 }
 
-                if (currentBasePacket.fullStr.length == currentBasePacket.recvMiniSize) {
+                // 发送已收到的小包序号
+                this.responseState("3", mid, ipStr, ipPort);
 
-                    // 不用拼接，直接补发齐全声明
-                    this.responseState("4", currentBasePacket.packetHeader.i, ipStr, ipPort);
+                // console.log("收到反馈码 2 新小包", mid, ":", miniPacket.n);
 
-                    console.log("补发", currentBasePacket.packetHeader.i, "齐全声明");
+                // 如果未计算过该 小包
+                if (currentBasePacket.jointStr[mid] === undefined) {
 
-                } else {
+                    currentBasePacket.recvMiniCount += 1;
 
-                    // 收到所有小包，开始拼接，接完发齐全声明，并触发事件
-                    for (let s in currentBasePacket.jointStr) {
+                    currentBasePacket.recvMiniSize += miniPacket.n.length;
 
-                        currentBasePacket.fullStr += currentBasePacket.jointStr[s];
+                    // 在字符组加入该小包
+                    currentBasePacket.jointStr[mid] = miniPacket.n;
 
+                }
+
+                // 如果长度和数量已收完，停止接收
+                if (currentBasePacket.recvMiniSize >= PacketHeader.getArraySize(currentBasePacket.packetHeader.a)) {
+
+                    if (currentBasePacket.fullStr.length == currentBasePacket.recvMiniSize) {
+
+                        // 不用拼接，直接补发齐全声明
+                        this.responseState("4", currentBasePacket.packetHeader.i, ipStr, ipPort);
+
+                        // console.log("补发", currentBasePacket.packetHeader.i, "齐全声明");
+
+                    } else {
+
+                        // 收到所有小包，开始拼接，接完发齐全声明，并触发事件
+                        for (let s in currentBasePacket.jointStr) {
+
+                            currentBasePacket.fullStr += currentBasePacket.jointStr[s];
+
+                        }
+
+                        // 触发自定义事件
+                        this.emit(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, sid);
+
+                        // 触发完删除旧包头
+                        delete this.recvJson[sid][currentBasePacket.packetHeader.i];
+
+                        if (Object.keys(this.recvJson[sid]).length == 0) {
+
+                            delete this.recvJson[sid];
+                            
+                        }
+
+                        // 发送小包齐全声明
+                        this.responseState("4", currentBasePacket.packetHeader.i, ipStr, ipPort);
+
+                        // console.log("收到", currentBasePacket.packetHeader.i, "的所有小包");
                     }
-
-                    // console.log("触发事件", currentBasePacket.packetHeader.n);
-
-                    // 触发自定义事件
-                    this.emit(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, sid);
-
-                    // 触发完删除旧包头
-                    delete this.recvJson[sid][currentBasePacket.packetHeader.i];
-
-                    // 发送小包齐全声明
-                    this.responseState("4", currentBasePacket.packetHeader.i, ipStr, ipPort);
-
-                    // console.log("收到", currentBasePacket.packetHeader.i, "的所有小包");
                 }
             }
-
-        } else {
-
-            // console.log("收到反馈码 2 但该包已不存在");
-
-        }
+        })
     }
 
     // 3 收到小包序号反馈 mid
     miniPacketRecieved(dataString, ipStr, ipPort, sid) {
 
-        // console.log("收到反馈码 3 小包序号 mid: ", dataString);
+        process.nextTick(() => {
 
-        let mid = parseInt(dataString);
+            // console.log("收到反馈码 3 小包序号 mid: ", dataString);
 
-        let ipOrSocketId = (this.sendJson[sid]) ? sid : ipStr;
-        
-        let currentPacket = this.getCurrentPacket(this.sendJson, ipOrSocketId);
+            let mid = parseInt(dataString);
 
-        if (!currentPacket) return;
+            let ipOrSocketId = (this.sendJson[sid]) ? sid : ipStr;
+            
+            let currentPacket = this.getCurrentPacket(this.sendJson, ipOrSocketId);
 
-        currentPacket.miniPacketCheckList[mid] = "1";
+            if (!currentPacket) return;
 
-        // console.log("收到小包序号为" + mid + "状态(1为正常)" + currentPacket.miniPacketCheckList[mid]);
+            currentPacket.miniPacketCheckList[mid] = "1";
+
+            // console.log("收到反馈码 3， 小包序号 mid: ", mid, "来自 ", ipStr, ":", ipPort);
+
+            // console.log("收到小包序号为" + mid + "状态(1为正常)" + currentPacket.miniPacketCheckList[mid]);
+
+        })
 
     }
 
     // 4 收到小包齐全反馈 headerId ，删除旧包头
     fullPacketRecieved(dataString, ipStr, ipPort, sid) {
 
-        let headerId = parseInt(dataString);
+        process.nextTick(() => {
 
-        let ipOrSocketId = (this.sendJson[sid]) ? sid : ipStr;
+            let headerId = parseInt(dataString);
 
-        let existPacket = this.getCurrentPacket(this.sendJson, ipOrSocketId);
+            let ipOrSocketId = (this.sendJson[sid]) ? sid : ipStr;
 
-        if (existPacket !== null && existPacket !== undefined) {
+            let existPacket = this.getCurrentPacket(this.sendJson, ipOrSocketId);
 
-            existPacket.miniPacketListRecvState = true;
+            if (existPacket !== null && existPacket !== undefined) {
 
-            console.log(" 收到反馈码 4 所有小包被收到, 耗时", this.nowTimeSample - existPacket.sendTimeSample);
+                existPacket.miniPacketListRecvState = true;
 
-            // 已接收完毕，删除该包
-            delete this.sendJson[ipOrSocketId][headerId];
+                // console.log(" 收到反馈码 4 ，" + headerId + "的所有小包被收到, 耗时", this.nowTimeSample - existPacket.sendTimeSample);
 
-        } else {
+                // 已接收完毕，删除该包
+                delete this.sendJson[ipOrSocketId][headerId];
 
-            // console.log(" 所有小包被收到，但该包已不存在");
+                if (Object.keys(this.sendJson[ipOrSocketId]).length == 0) {
 
-        }
+                    delete this.sendJson[ipOrSocketId];
+
+                }
+            }
+        })
     }
 
-    // 5 收到弃发小包请求 headerId
-    abortPacket(dataString, ipStr, ipPort, sid) {
+    // 5 收到错误小包重发请求 mid
+    requestWrongMini(dataString, ipStr, ipPort, sid) {
 
-        console.log("收到弃发小包请求" + dataString);
+        process.nextTick(() => {
 
+            let mid = parseInt(dataString);
+
+            console.log("SendJson", Object.keys(this.sendJson));
+
+            console.log("收到重发小包请求" + dataString);
+
+            let currentPacket = (this.sendJson[ipStr] && Object.keys(this.sendJson[ipStr]).length > 0) ? this.getCurrentPacket(this.sendJson, ipStr) : this.getCurrentPacket(this.sendJson, sid);
+
+            if (currentPacket) {
+
+                this.socket.send(currentPacket.miniPacketList[mid], currentPacket.toPort, currentPacket.toIp, (err, byte) => {
+
+                    console.log("包头", currentPacket.packetHeader.i, "因错误补发送小包id", mid);
+
+                });
+
+            } else {
+
+                console.log("未找到需重发的PACKET", currentPacket);
+
+            }
+        })
     }
 
     // socket 监听
@@ -497,50 +629,51 @@ class CuteUDP extends event {
 
     // socket 接收消息
     onMessage(msg, rinfo) {
-            
-        let bf = Buffer.from(msg);
 
-        let recvString = bf.toString();
+        process.nextTick(() => {
 
-        let ipStr = rinfo.address;
+            let bf = Buffer.from(msg);
 
-        let ipPort = rinfo.port;
+            let recvString = bf.toString();
 
-        let stateCode = recvString[0].toString();
+            let ipStr = rinfo.address;
 
-        let sid = recvString.substr(1, 24);
+            let ipPort = rinfo.port;
 
-        let dataString = recvString.substring(25);
+            let stateCode = recvString[0].toString();
 
-        // console.log("recvString", recvString);
-        // console.log("stateCode", stateCode);
-        // console.log("sid", sid);
-        // console.log("dataString", dataString);
+            let sid = recvString.substr(1, 24);
 
-        switch (stateCode) {
+            let dataString = recvString.substring(25);
 
-            case "0": CuteUDP.instance.emit("addHeader", dataString, ipStr, ipPort, sid);
-                break;
+            // console.log("Socket Message", recvString);
 
-            case "1": CuteUDP.instance.emit("headerRecieved", dataString, ipStr, ipPort, sid);
-                break;
+            switch (stateCode) {
 
-            case "2": CuteUDP.instance.emit("jointPacket", dataString, ipStr, ipPort, sid);
-                break;
+                case "0": CuteUDP.instance.emit("addHeader", dataString, ipStr, ipPort, sid);
+                    break;
 
-            case "3": CuteUDP.instance.emit("miniPacketRecieved", dataString, ipStr, ipPort, sid);
-                break;
+                case "1": CuteUDP.instance.emit("headerRecieved", dataString, ipStr, ipPort, sid);
+                    break;
 
-            case "4": CuteUDP.instance.emit("fullPacketRecieved", dataString, ipStr, ipPort, sid);
-                break;
+                case "2": CuteUDP.instance.emit("jointPacket", dataString, ipStr, ipPort, sid);
+                    break;
 
-            case "5": CuteUDP.instance.emit("abortPacket", dataString, ipStr, ipPort, sid);
-                break;
+                case "3": CuteUDP.instance.emit("miniPacketRecieved", dataString, ipStr, ipPort, sid);
+                    break;
 
-            default:
+                case "4": CuteUDP.instance.emit("fullPacketRecieved", dataString, ipStr, ipPort, sid);
+                    break;
 
-                break;
-        }
+                case "5": CuteUDP.instance.emit("requestWrongMini", dataString, ipStr, ipPort, sid);
+                    break;
+
+                default:
+
+                    break;
+            }
+
+        })
 
         // console.log(dataString);
     }
@@ -553,23 +686,27 @@ class CuteUDP extends event {
     }
 
     // 异步，发包头的回调
-    sendHeaderCallBack(data) {
+    sendHeaderCallBack(err, byte) {
 
-        // console.log("已发送包头：", data);
+        if (err) console.log("发送包头时出错", err);
 
     }
 
     // 异步，发小包的回调
-    sendMiniCallBack(data) {
+    sendMiniCallBack(err, byte) {
 
-        // console.log("已发小包：", data.toString());
+        if (arguments.length == 1) byte = err;
+
+        // console.log("back CPM Leng :", byte);
+
+        if (err) console.log("发送小包出错", byte);
 
     }
 
     // 异步，发状态的回调
-    sendResponseStateBack(data) {
+    sendResponseStateBack(err, byte) {
 
-        // console.log("已回复状态", data);
+        if (err) console.log("发送反馈时出错", err);
         
     }
 
