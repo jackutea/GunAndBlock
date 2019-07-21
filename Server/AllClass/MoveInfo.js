@@ -3,11 +3,11 @@ class MoveInfo {
 
     constructor() {
 
-        this.sid = "";
+        this.d = ""; // sid
 
-        this.inRoleArrayIndex = -1;
+        this.i = -1; // inRoleArrayIndex
 
-        this.vecArray = [];
+        this.v = []; // vecArray
 
     }
 }

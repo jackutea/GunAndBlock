@@ -125,7 +125,7 @@ class BattleApp extends event {
 
                 let fieldRole = BATTLE_GD.FIELD_JSON[fieldIndex].roleArray[role.inRoleArrayIndex];
 
-                fieldRole.vecArray = moveInfo.vecArray;
+                fieldRole.vecArray = moveInfo.v;
 
                 process.send({ eventName: "BattleMove", dataString : JSON.stringify(BATTLE_GD.FIELD_JSON[fieldIndex]), sid: sid });
 

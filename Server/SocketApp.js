@@ -418,11 +418,11 @@ class SocketApp extends event {
 
                 if (_sid == sid) {
 
-                    moveInfo.sid = _sid;
+                    moveInfo.d = _sid;
 
-                    moveInfo.vecArray = role.vecArray;
+                    moveInfo.v = role.vecArray;
 
-                    moveInfo.inRoleArrayIndex = role.inRoleArrayIndex;
+                    moveInfo.i = role.inRoleArrayIndex;
                     
                 }
             }
