@@ -7,7 +7,6 @@ public class OneRolePanelScript : MonoBehaviour {
 
     public GameObject rolePanel;
     public Button roleButton;
-    public int roleIndex;
     public Text roleName;
     public Text level;
     public Button enterGameButton;
@@ -22,10 +21,11 @@ public class OneRolePanelScript : MonoBehaviour {
         // 选中角色
         roleButton.onClick.AddListener(() => {
 
-            PlayerDataScript.ROLE_INDEX = roleIndex;
+            PlayerDataScript.ROLE_NAME = roleName.text;
 
-            PlayerDataScript.ROLE_STATE = PlayerDataScript.ROLES[roleIndex];
+            PlayerDataScript.ROLE_STATE = PlayerDataScript.ROLES[roleName.text];
 
+            // 选中一个角色，取消其他角色的“进入游戏选项”
             GameObject[] btns = GameObject.FindGameObjectsWithTag("RoleSiblingsButton");
 
             for (int i = 0; i < btns.Length; i += 1) {

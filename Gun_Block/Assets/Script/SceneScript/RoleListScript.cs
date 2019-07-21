@@ -85,13 +85,18 @@ public class RoleListScript : MonoBehaviour {
         });
     }
 
+    // 显示所有角色
     void showAllRole() {
 
         if (PlayerDataScript.ROLES == null) return;
 
-        List<RoleState> roles = PlayerDataScript.ROLES;
+        Dictionary<string, RoleState> roles = PlayerDataScript.ROLES;
+
+        List<string> roleNameList = new List<string>(roles.Keys);
 
         for (int i = 0; i < roles.Count; i += 1) {
+
+            string roleName = roleNameList[i];
 
             GameObject oneRole = Instantiate(PrefabCollection.instance.oneRolePanelPrefab, roleListPanel.transform);
 
@@ -101,11 +106,9 @@ public class RoleListScript : MonoBehaviour {
 
             OneRolePanelScript oneRoleScript = oneRole.GetComponentInChildren<OneRolePanelScript>();
 
-            oneRoleScript.roleIndex = i;
-            
-            oneRoleScript.roleName.text = roles[i].roleName;
+            oneRoleScript.roleName.text = roleName;
 
-            oneRoleScript.level.text = "Lv " + roles[i].level.ToString();
+            oneRoleScript.level.text = "Lv " + roles[roleName].level.ToString();
 
         }
     }

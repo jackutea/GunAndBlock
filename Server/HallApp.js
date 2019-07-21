@@ -58,42 +58,6 @@ class HallApp extends event {
 
     }
 
-    // 开始匹配 申请GD
-    requestHallGD(dataString, sid) {
-
-        let modeCode = dataString;
-
-        let username = HALL_GD.ONLINE_ACCOUNT[sid];
-
-        HALL_GD.ONLINE_ROLE[username].inComparingMode = parseInt(modeCode); // 角色状态设为正在匹配中
-
-        process.send({ eventName: "RequestHallGD", dataString: {roleState: HALL_GD.ONLINE_ROLE[username]}, sid: sid });
-
-    }
-
-    // 匹配成功 主线程请求角色数组
-    requestRoleState(dataString, sid) {
-
-        let sidArray = dataString;
-
-        let roleArray = [];
-
-        for (let index in sidArray) {
-
-            let username = HALL_GD.ONLINE_ACCOUNT[sidArray[index]];
-
-            let role = HALL_GD.ONLINE_ROLE[username];
-
-            role.sid = sidArray[index];
-
-            roleArray.push(role);
-
-        }
-
-        process.send({ eventName: "RequestRoleState", dataString: roleArray, sid: "" });
-
-    }
-
     // 初始化进程监听事件
     initHallClusterListener() {
 
@@ -105,10 +69,6 @@ class HallApp extends event {
 
         // 处理主线程请求
         this.on("InitHallGD", this.initHallGD);
-
-        this.on("RequestHallGD", this.requestHallGD);
-
-        this.on("RequestRoleState", this.requestRoleState);
 
         // 处理客户端请求
         this.on("Register", this.register); // 注册
@@ -126,6 +86,10 @@ class HallApp extends event {
         this.on("EnterGame", this.enterGame); // 选定角色后进入游戏
 
         this.on("ShowRoom", this.showRoom); // 显示服务器自定义房间
+
+        this.on("RequestHallGD", this.requestHallGD);
+
+        this.on("RequestRoleState", this.requestRoleState);
 
     }
 
@@ -181,8 +145,6 @@ class HallApp extends event {
     login(dataString, sid) {
 
         process.nextTick(() => {
-
-            console.log("login event :", dataString);
 
             let UserInfo = JSON.parse(dataString);
 
@@ -256,7 +218,9 @@ class HallApp extends event {
 
             mongoDB.find("role", findObj, (err, result) => {
 
-                let roleList = new Factory.RoleListSendInfo();
+                let roleListSendInfo = new Factory.RoleListSendInfo();
+
+                roleListSendInfo.roleJson = {};
 
                 for (let i = 0; i < result.length; i += 1) {
 
@@ -264,11 +228,13 @@ class HallApp extends event {
 
                     delete roleState["_id"];
 
-                    roleList.roles.push(roleState);
+                    let roleName = roleState.roleName;
+
+                    roleListSendInfo.roleJson[roleName] = roleState;
 
                 }
 
-                process.send({ eventName: "ShowRole", dataString: JSON.stringify(roleList), sid: sid});
+                process.send({ eventName: "ShowRole", dataString: roleListSendInfo, sid: sid});
 
             });
         })
@@ -326,7 +292,7 @@ class HallApp extends event {
 
             mongoDB.deleteOne("role", delObj, (err, result) => {
 
-                process.send({ eventName: "DeleteRole", dataString: "", sid: sid});
+                process.send({ eventName: "DeleteRole", dataString: roleName, sid: sid});
 
             });
         })
@@ -350,6 +316,41 @@ class HallApp extends event {
 
     // TODO : 显示自定义房间
     showRoom(dataString, sid) {
+
+    }
+
+    // 开始匹配 申请GD
+    requestHallGD(dataString, sid) {
+
+        let modeCode = dataString;
+
+        let username = HALL_GD.ONLINE_ACCOUNT[sid];
+
+        HALL_GD.ONLINE_ROLE[username].inComparingMode = parseInt(modeCode); // 角色状态设为正在匹配中
+
+        process.send({ eventName: "RequestHallGD", dataString: {roleState: HALL_GD.ONLINE_ROLE[username]}, sid: sid });
+
+    }
+
+    // 匹配成功 主线程请求角色数组
+    // dataString = sidJson 键值对为 sid : {}
+    requestRoleState(dataString, sid) {
+
+        let sidJson = dataString;
+
+        for (let sid in sidJson) {
+
+            let username = HALL_GD.ONLINE_ACCOUNT[sid];
+
+            let role = HALL_GD.ONLINE_ROLE[username];
+
+            role.sid = sid;
+
+            sidJson[sid] = role;
+
+        }
+
+        process.send({ eventName: "RequestRoleState", dataString: sidJson, sid: "" });
 
     }
 }

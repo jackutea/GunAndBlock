@@ -26,8 +26,6 @@ class RoleState {
         // 战斗时相关（不会存入数据库）
         this.inFieldId = -1;
 
-        this.inRoleArrayIndex = -1;
-
         this.life = 5.0;
         
         this.blockLife = 3.0;
@@ -52,7 +50,7 @@ class RoleState {
         
         this.shootSpeed = 4.0;
 
-        this.vecArray = [0.0, 0.0, 0.0];
+        this.vecArray = [0, 0];
 
         this.isLeftAlly = true;
         

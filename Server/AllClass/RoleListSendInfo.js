@@ -3,7 +3,7 @@ class RoleListSendInfo {
 
     constructor() {
 
-        this.roles = [];
+        this.roleJson = {};
         
     }
 }

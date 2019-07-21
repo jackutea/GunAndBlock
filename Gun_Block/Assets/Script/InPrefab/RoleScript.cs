@@ -17,7 +17,6 @@ public class RoleScript : MonoBehaviour {
 
     public bool isMe = false;
 
-    public int index; // 在 PlayerDataScript.FIELD_INFO.roleArray内的索引
     public float currentX;
     public float currentY;
 
@@ -39,7 +38,7 @@ public class RoleScript : MonoBehaviour {
 
         socketSendGap = 0;
 
-        registerKeyAct();
+        // registerKeyAct();
 
         roleCollider = roleInstance.GetComponent<Collider>();
 
@@ -50,8 +49,6 @@ public class RoleScript : MonoBehaviour {
     }
 
     void Update() {
-
-        socketSendGap += Time.deltaTime;
 
         aniCheck(); // 动画更替
 
@@ -67,6 +64,8 @@ public class RoleScript : MonoBehaviour {
     }
 
     void FixedUpdate() {
+
+        socketSendGap += Time.deltaTime;
 
         if (roleState.shootGap > 0)
 
@@ -91,47 +90,89 @@ public class RoleScript : MonoBehaviour {
 
         if (Input.GetKey(KeyCode.W)) {
 
-            move(KeyCode.W);
+            if (Input.GetKey(KeyCode.A)) {
 
-            // Action<KeyCode> act = keyActDic[KeyCode.W];
+                move(KeyCode.A, KeyCode.W);
 
-            // act.Invoke(KeyCode.W);
+                return;
+
+            } else if (Input.GetKey(KeyCode.D)) {
+
+                move(KeyCode.D, KeyCode.W);
+
+                return;
+
+            }
+
+            move(KeyCode.None, KeyCode.W);
 
         }
 
         if (Input.GetKey(KeyCode.S)) {
 
-            move(KeyCode.S);
+            if (Input.GetKey(KeyCode.A)) {
 
-            // Action<KeyCode> act = keyActDic[KeyCode.S];
+                move(KeyCode.A, KeyCode.S);
 
-            // act.Invoke(KeyCode.S);
+                return;
+
+            } else if (Input.GetKey(KeyCode.D)) {
+
+                move(KeyCode.D, KeyCode.S);
+
+                return;
+
+            }
+
+            move(KeyCode.None, KeyCode.S);
 
         }
 
         if (Input.GetKey(KeyCode.A)) {
 
-            move(KeyCode.A);
+            if (Input.GetKey(KeyCode.W)) {
 
-            // Action<KeyCode> act = keyActDic[KeyCode.A];
+                move(KeyCode.A, KeyCode.W);
 
-            // act.Invoke(KeyCode.A);
+                return;
+
+            } else if (Input.GetKey(KeyCode.S)) {
+
+                move(KeyCode.A, KeyCode.S);
+
+                return;
+
+            }
+
+            move(KeyCode.A, KeyCode.None);
 
         }
 
         if (Input.GetKey(KeyCode.D)) {
 
-            move(KeyCode.D);
+            if (Input.GetKey(KeyCode.W)) {
 
-            // Action<KeyCode> act = keyActDic[KeyCode.D];
+                move(KeyCode.D, KeyCode.W);
 
-            // act.Invoke(KeyCode.D);
+                return;
 
+            } else if (Input.GetKey(KeyCode.S)) {
+
+                move(KeyCode.D, KeyCode.S);
+
+                return;
+
+            }
+
+            move(KeyCode.D, KeyCode.None);
+            
         }
 
         if (Input.GetKeyUp(KeyCode.W) || Input.GetKeyUp(KeyCode.S) || Input.GetKeyUp(KeyCode.A) || Input.GetKeyUp(KeyCode.D)) {
 
             roleState.isMoving = false;
+
+            CuteUDPManager.cuteUDP.emitServer("CancelMove", "");
 
         }
     }
@@ -173,23 +214,23 @@ public class RoleScript : MonoBehaviour {
     }
 
     // 注册按键事件
-    void registerKeyAct() {
+    // void registerKeyAct() {
 
-        keyActDic = new Dictionary<KeyCode, Action<KeyCode>>();
+    //     keyActDic = new Dictionary<KeyCode, Action<KeyCode>>();
 
-        keyActDic.Add(KeyCode.W, move);
+    //     keyActDic.Add(KeyCode.W, move);
 
-        keyActDic.Add(KeyCode.S, move);
+    //     keyActDic.Add(KeyCode.S, move);
 
-        keyActDic.Add(KeyCode.A, move);
+    //     keyActDic.Add(KeyCode.A, move);
 
-        keyActDic.Add(KeyCode.D, move);
+    //     keyActDic.Add(KeyCode.D, move);
 
-        keyActDic.Add(KeyCode.Mouse0, shoot);
+    //     keyActDic.Add(KeyCode.Mouse0, shoot);
 
-        keyActDic.Add(KeyCode.Mouse1, block);
+    //     keyActDic.Add(KeyCode.Mouse1, block);
 
-    }
+    // }
 
     // 动画设置
     void aniCheck() {
@@ -228,7 +269,7 @@ public class RoleScript : MonoBehaviour {
     }
 
     // 移动
-    void move(KeyCode key) {
+    void move(KeyCode xkey = KeyCode.None, KeyCode ykey = KeyCode.None) {
 
         roleState.isMoving = true;
 
@@ -251,62 +292,90 @@ public class RoleScript : MonoBehaviour {
 
         float xWall = battlePanelRect.rect.width / 2;
 
-        Vector3 po = roleInstance.transform.localPosition;
+        Vector2 po = roleInstance.transform.localPosition;
 
-        if (key == KeyCode.W) {
+        if (ykey == KeyCode.W) {
 
-            if (po.y + colHeight > yWall) return; // 禁止向上
-            
-            roleInstance.transform.Translate(Vector3.up * roleState.moveSpeed * Time.deltaTime);
+            if (po.y + colHeight <= yWall) {
 
-        }
+                roleInstance.transform.Translate(Vector2.up * roleState.moveSpeed * Time.deltaTime);
 
-        if (key == KeyCode.S) {
-
-            if (po.y - colHeight < - yWall) return; // 禁止向下
-
-            roleInstance.transform.Translate(Vector3.down * roleState.moveSpeed * Time.deltaTime);
+            }
 
         }
 
-        if (key == KeyCode.A) {
+        if (ykey == KeyCode.S) {
 
-            if (po.x - colWidth < - xWall) return; // 禁止向左
+            if (po.y - colHeight >= - yWall) {
 
-            roleInstance.transform.Translate(Vector3.left * roleState.moveSpeed * Time.deltaTime);
+                roleInstance.transform.Translate(Vector2.down * roleState.moveSpeed * Time.deltaTime);
+                
+            }
         }
 
-        if (key == KeyCode.D) {
+        if (xkey == KeyCode.A) {
 
-            if (po.x + colWidth > xWall) return; // 禁止向右
+            if (roleState.isLeftAlly == false) {
 
-            roleInstance.transform.Translate(Vector3.right * roleState.moveSpeed * Time.deltaTime);
+                if (po.x - colWidth >= 0) {
+                
+                    roleInstance.transform.Translate(Vector2.left * roleState.moveSpeed * Time.deltaTime);
 
+                }
+
+            } else {
+
+                if (po.x - colWidth >= - xWall) {
+                
+                    roleInstance.transform.Translate(Vector2.left * roleState.moveSpeed * Time.deltaTime);
+
+                }
+            }
         }
 
-        Vector3 currentPo = roleInstance.transform.localPosition;
+        if (xkey == KeyCode.D) {
 
-        float pox = (float)Math.Round(currentPo.x, 3);
+            if (roleState.isLeftAlly == true) {
 
-        float poy = (float)Math.Round(currentPo.y, 3);
+                if (po.x + colWidth <= 0) {
 
-        float poz = (float)Math.Round(currentPo.z, 3);
+                    roleInstance.transform.Translate(Vector2.right * roleState.moveSpeed * Time.deltaTime);
 
-        float[] floatPo = {pox, poy, poz};
+                }
 
-        MoveInfo moveInfo = new MoveInfo();
+            } else {
 
-        moveInfo.sid = CuteUDPApp.CuteUDP.socketId;
+                if (po.x + colWidth <= xWall) {
 
-        moveInfo.vecArray = floatPo;
+                    roleInstance.transform.Translate(Vector2.right * roleState.moveSpeed * Time.deltaTime);
 
-        string moveInfoString = JsonUtility.ToJson(moveInfo);
+                }
+            }
+        }
 
-        if (socketSendGap > Time.deltaTime) {
+        Vector2 currentPo = roleInstance.transform.localPosition;
+
+        int pox = (int)Mathf.Floor(currentPo.x * 1000) / 1000;
+
+        Debug.Log(pox);
+
+        int poy = (int)Mathf.Floor(currentPo.y * 1000) / 1000;
+
+        int[] intPo = {pox, poy};
+
+        Debug.Log(intPo[0]);
+
+        if (socketSendGap > Time.deltaTime * 1.5f) {
+
+            MoveInfo moveInfo = new MoveInfo(intPo);
+
+            moveInfo.d = CuteUDPApp.CuteUDP.socketId;
+
+            string moveInfoString = JsonUtility.ToJson(moveInfo);
+
+            Debug.LogWarning(moveInfoString);
 
             CuteUDPManager.cuteUDP.emitServer("BattleMove", moveInfoString);
-
-            socketSendGap = 0;
 
         }
     }

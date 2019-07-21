@@ -545,8 +545,6 @@ class CuteUDP extends event {
 
             // console.log("收到反馈码 3， 小包序号 mid: ", mid, "来自 ", ipStr, ":", ipPort);
 
-            // console.log("收到小包序号为" + mid + "状态(1为正常)" + currentPacket.miniPacketCheckList[mid]);
-
         })
 
     }
@@ -587,24 +585,27 @@ class CuteUDP extends event {
 
             let mid = parseInt(dataString);
 
-            console.log("SendJson", Object.keys(this.sendJson));
+            // console.log("SendJson", Object.keys(this.sendJson));
 
-            console.log("收到重发小包请求" + dataString);
+            // console.log("sid", sid);
 
-            let currentPacket = (this.sendJson[ipStr] && Object.keys(this.sendJson[ipStr]).length > 0) ? this.getCurrentPacket(this.sendJson, ipStr) : this.getCurrentPacket(this.sendJson, sid);
+            let currentPacket = (this.sendJson[sid] && Object.keys(this.sendJson[sid]).length > 0) ? this.getCurrentPacket(this.sendJson, sid) : this.getCurrentPacket(this.sendJson, ipStr);
 
             if (currentPacket) {
 
-                this.socket.send(currentPacket.miniPacketList[mid], currentPacket.toPort, currentPacket.toIp, (err, byte) => {
+                try {
 
-                    console.log("包头", currentPacket.packetHeader.i, "因错误补发送小包id", mid);
+                    this.socket.send(currentPacket.miniPacketList[mid], currentPacket.toPort, currentPacket.toIp, (err, byte) => {
 
-                });
+                        console.log("包头", currentPacket.packetHeader.i, "因错误补发送小包id", mid);
 
-            } else {
+                    });
 
-                console.log("未找到需重发的PACKET", currentPacket);
+                } catch (err) {
 
+                    if (err) throw err;
+
+                }
             }
         })
     }
@@ -720,6 +721,33 @@ class CuteUDP extends event {
         let k = Object.keys(v)[0];
 
         if (!k) return null;
+
+        let j = _json[ipOrSocketId][k];
+
+        if (j.packetHeaderRecvState !== undefined) {
+
+            if (j.packetHeaderRecvState === true) {
+
+                if (j.miniPacketListRecvState === true) {
+
+                    delete _json[ipOrSocketId][k];
+
+                    return this.getCurrentPacket(_json, ipOrSocketId);
+
+                }
+            }
+        }
+
+        if (j.fullStr !== undefined) {
+
+            if (j.fullStr.length === PacketHeader.getArraySize(j.packetHeader.a)) {
+
+                delete _json[ipOrSocketId][k];
+
+                return this.getCurrentPacket(_json, ipOrSocketId);
+                
+            }
+        }
 
         return _json[ipOrSocketId][k];
 

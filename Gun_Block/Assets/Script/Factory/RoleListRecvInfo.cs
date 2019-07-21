@@ -4,6 +4,6 @@ using System.Collections.Generic;
 [Serializable]
 public class RoleListRecvInfo {
 
-    public RoleState[] roles = new RoleState[5];
+    public Dictionary<string, RoleState> roleJson = new Dictionary<string, RoleState>();
     
 }

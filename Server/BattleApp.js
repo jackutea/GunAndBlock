@@ -65,28 +65,37 @@ class BattleApp extends event {
 
         this.on("BattleMove", this.battleMove); // 玩家移动
 
+        this.on("CancelMove", this.cancelMove); // 玩家取消移动
+
     }
 
     // 匹配成功，载入战场
+    // dataString = sidJson 键值对为 sid : roleState
     battleLoadField(dataString, sid) {
 
         process.nextTick(() => {
 
-            let roleArray = dataString;
+            let sidJson = dataString;
 
             let index = BATTLE_GD.FIELD_JSON.length;
 
-            for (let i in roleArray) {
+            let modeCode; // str
 
-                let role = roleArray[i];
+            let i = 0;
+
+            for (let _sid in sidJson) {
+
+                let role = sidJson[_sid];
+
+                if(modeCode === undefined) modeCode = role.inComparingMode;
 
                 role.inFieldId = index;
 
-                role.inRoleArrayIndex = i;
+                BATTLE_GD.ONLINE_ROLE[_sid] = role;
 
-                BATTLE_GD.ONLINE_ROLE[role.sid] = role;
+                let len = Object.keys(sidJson).length;
 
-                if (i < roleArray.length / 2) {
+                if (i < len / 2) {
 
                     role.isLeftAlly = true;
 
@@ -95,11 +104,11 @@ class BattleApp extends event {
                     role.isLeftAlly = false;
 
                 }
+
+                i += 1;
             }
 
-            let modeCode = roleArray[0].inComparingMode;
-
-            BATTLE_GD.FIELD_JSON.push(new FieldInfo(index, modeCode, roleArray));
+            BATTLE_GD.FIELD_JSON.push(new FieldInfo(index, modeCode, sidJson));
 
             // 传FieldInfo回去
             process.send({ eventName: "BattleLoadField", dataString : BATTLE_GD.FIELD_JSON[index], sid: "" });
@@ -115,21 +124,44 @@ class BattleApp extends event {
 
             // console.log("BattleApp move :", dataString);
 
-            let moveInfo = JSON.parse(dataString);
+            let moveInfo = JSON.parse(dataString); // moveInfo = 谁要移动，移到哪里
 
             if (BATTLE_GD.ONLINE_ROLE[sid]) {
 
-                let role = BATTLE_GD.ONLINE_ROLE[sid];
+                let role = BATTLE_GD.ONLINE_ROLE[sid]; // 请求移动的玩家（玩家列表变量内）
 
-                let fieldIndex = role.inFieldId;
+                let fieldIndex = role.inFieldId; // 玩家所在战场ID
 
-                let fieldRole = BATTLE_GD.FIELD_JSON[fieldIndex].roleArray[role.inRoleArrayIndex];
+                let sidJson = BATTLE_GD.FIELD_JSON[fieldIndex].sidJson;
 
-                fieldRole.vecArray = moveInfo.v;
+                let fieldRole = sidJson[sid]; // 玩家（战场变量内）
 
-                process.send({ eventName: "BattleMove", dataString : JSON.stringify(BATTLE_GD.FIELD_JSON[fieldIndex]), sid: sid });
+                fieldRole.vecArray = moveInfo.v; // 玩家坐标修改为新上传坐标
+
+                let sidArray = Object.keys(sidJson);
+
+                process.send({ eventName: "BattleMove", dataString : {moveInfo: moveInfo, sidArray: sidArray}, sid: sid });
 
             }
+        })
+    }
+
+    // 玩家取消移动
+    // 返回 roleArray
+    cancelMove(dataString, sid) {
+
+        process.nextTick(() => {
+
+            let role = BATTLE_GD.ONLINE_ROLE[sid];
+
+            let fieldIndex = role.inFieldId;
+
+            let sidJson = BATTLE_GD.FIELD_JSON[fieldIndex].sidJson;
+
+            let roleArray = Object.keys(sidJson);
+
+            process.send({ eventName: "CancelMove", dataString: JSON.stringify(roleArray), sid: sid});
+
         })
     }
 }

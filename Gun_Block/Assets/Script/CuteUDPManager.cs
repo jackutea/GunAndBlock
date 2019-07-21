@@ -27,7 +27,7 @@ public class CuteUDPManager : MonoBehaviour {
 
         serverIp = "127.0.0.1";
 
-        serverIp = "47.104.169.23";
+        // serverIp = "47.104.169.23";
 
         serverHallPort = 10000;
 
@@ -159,6 +159,13 @@ public class CuteUDPManager : MonoBehaviour {
         cuteUDP.on<string, string>("BattleMoveRecv", (string dataString, string sid) => {
 
             addQueue(CuteUDPEvent.onBattleMoveRecv, dataString, sid);
+
+        });
+
+        // 其他玩家取消移动
+        cuteUDP.on<string, string>("CancelMoveRecv", (string dataString, string sid) => {
+
+            addQueue(CuteUDPEvent.onCancelMoveRecv, dataString, sid);
 
         });
 

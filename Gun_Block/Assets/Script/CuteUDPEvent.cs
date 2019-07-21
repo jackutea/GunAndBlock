@@ -1,10 +1,13 @@
 using System;
 using System.Threading;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 class CuteUDPEvent : MonoBehaviour {
     
@@ -50,11 +53,15 @@ class CuteUDPEvent : MonoBehaviour {
 
         Debug.Log(dataString);
 
-        RoleListRecvInfo roleRecvInfo = JsonUtility.FromJson<RoleListRecvInfo>(dataString);
+        RoleListRecvInfo roleListInfo = JsonConvert.DeserializeObject<RoleListRecvInfo>(dataString);
 
-        for (int i = 0; i < roleRecvInfo.roles.Length; i += 1) {
+        Dictionary<string, RoleState> roleJson = roleListInfo.roleJson;
 
-            PlayerDataScript.ROLES.Add(roleRecvInfo.roles[i]);
+        PlayerDataScript.ROLES = roleJson;
+
+        if (roleJson.Count > 0) {
+
+            Debug.Log(roleJson.Keys.First());
 
         }
 
@@ -67,7 +74,9 @@ class CuteUDPEvent : MonoBehaviour {
 
         Debug.Log("删除角色回传");
 
-        PlayerDataScript.ROLES.RemoveAt(PlayerDataScript.ROLE_INDEX);
+        string roleName = dataString;
+
+        PlayerDataScript.ROLES.Remove(roleName);
 
         SceneManager.LoadScene("RoleList");
 
@@ -78,7 +87,7 @@ class CuteUDPEvent : MonoBehaviour {
 
         RoleState oneRole = JsonUtility.FromJson<RoleState>(dataString);
 
-        PlayerDataScript.ROLES.Add(oneRole);
+        PlayerDataScript.ROLES.Add(oneRole.roleName, oneRole);
 
         SceneManager.LoadScene("RoleList");
 
@@ -123,7 +132,7 @@ class CuteUDPEvent : MonoBehaviour {
 
         // dataString = class FieldInfo
         Debug.LogWarning("匹配成功，回传战场数据 :" + dataString);
-        FieldInfo fieldInfo = JsonUtility.FromJson<FieldInfo>(dataString);
+        FieldInfo fieldInfo = JsonConvert.DeserializeObject<FieldInfo>(dataString);
 
         PlayerDataScript.FIELD_INFO = fieldInfo;
 
@@ -142,12 +151,25 @@ class CuteUDPEvent : MonoBehaviour {
 
         MoveInfo moveInfo = JsonUtility.FromJson<MoveInfo>(dataString);
 
-        string targetSid = moveInfo.sid;
+        string targetSid = moveInfo.d;
 
-        PlayerDataScript.FIELD_INFO.roleArray[moveInfo.inRoleArrayIndex].vecArray = moveInfo.vecArray;
+        PlayerDataScript.FIELD_INFO.sidJson[targetSid].vecArray = moveInfo.v;
 
-        FieldScript.BattleMove(targetSid, moveInfo.vecArray);
+        FieldScript.BattleMove(targetSid, moveInfo.v);
         
+    }
+
+    // 其他玩家取消移动
+    // dataString = 取消移动的玩家 sid 
+    public static void onCancelMoveRecv(string dataString, string sid) {
+
+        string targetSid = dataString;
+
+        Debug.Log("收到" + targetSid + "取消移动的请求");
+
+        PlayerDataScript.FIELD_INFO.sidJson[targetSid].isMoving = false;
+
+        FieldScript.CancelMove(targetSid);
     }
 
     // TODO 退出登录

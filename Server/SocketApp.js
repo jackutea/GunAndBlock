@@ -95,6 +95,8 @@ class SocketApp extends event {
         // Battle Cluster 负责处理
         this.cuteUDP.on("BattleMove", this.battleMoveReq); // 移动
 
+        this.on("CancelMove", this.cancelMoveReq); // 取消移动
+
     }
 
     // 初始化主进程监听事件
@@ -131,6 +133,8 @@ class SocketApp extends event {
         // Battle Cluster 处理完回传
         this.on("BattleMove", this.battleMoveRes); // 移动数据插入成功
 
+        this.on("CancelMove", this.cancelMoveRes); // 取消移动
+
     }
 
     // 注册 请求
@@ -161,10 +165,6 @@ class SocketApp extends event {
 
         process.nextTick(() => {
 
-            console.log("loginReq event:", dataString);
-
-            console.log("发送登录");
-
             SocketApp.hallCluster.send({ eventName: "Login", dataString: dataString, sid: sid });
             
         })
@@ -175,8 +175,6 @@ class SocketApp extends event {
     loginRes(dataString, sid) {
 
         process.nextTick(() => {
-
-            console.log("回传登录")
 
             this.cuteUDP.emitBackTo("LoginRecv", dataString, sid);
             
@@ -211,18 +209,22 @@ class SocketApp extends event {
 
         process.nextTick(() => {
 
-            SocketApp.hallCluster.send({ eventName: "ShowRole", dataString: dataString, sid: sid })
+            let serverId = dataString;
+
+            SocketApp.hallCluster.send({ eventName: "ShowRole", dataString: serverId, sid: sid })
                     
         })
     }
 
     // 显示角色 回应
-    // dataString = js class RoleListSendInfo
+    // dataString = class RoleListSendInfo
     showRoleRes(dataString, sid) {
 
         process.nextTick(() => {
 
-            this.cuteUDP.emitBackTo("ShowRoleRecv", dataString, sid);
+            let roleListSendInfo = dataString;
+
+            this.cuteUDP.emitBackTo("ShowRoleRecv", JSON.stringify(roleListSendInfo), sid);
             
         })
     }
@@ -264,18 +266,22 @@ class SocketApp extends event {
 
         process.nextTick(() => {
 
-            SocketApp.hallCluster.send({ eventName: "DeleteRole", dataString: dataString, sid: sid })
+            let roleName = dataString;
+
+            SocketApp.hallCluster.send({ eventName: "DeleteRole", dataString: roleName, sid: sid })
             
         })
     }
 
     // 删除角色 回应
-    // dataString = ""
+    // dataString = roleName
     deleteRoleRes(dataString, sid) {
 
         process.nextTick(() => {
 
-            this.cuteUDP.emitBackTo("DeleteRoleRecv", dataString, sid);
+            let roleName = dataString;
+
+            this.cuteUDP.emitBackTo("DeleteRoleRecv", roleName, sid);
             
         })
     }
@@ -355,17 +361,20 @@ class SocketApp extends event {
 
     // 匹配成功 回应
     // 向HALL请求玩家数据，成功后向BATTLE注入战斗数据，注入成功后，推送给客户端
+    // dataString = sidJson 键值对为 sid : {}
     compareSucessRes(dataString, sid) {
 
         process.nextTick(() => {
 
-            let sidArray = dataString; // 匹配成功的玩家数组 array[sid...]
+            let sidJson = dataString;
 
-            SocketApp.hallCluster.send({ eventName: "RequestRoleState", dataString: sidArray, sid: ""});
+            let sidArray = Object.keys(sidJson);
 
-            this.on("RequestRoleState", (_roleArray, nothing) => {
+            SocketApp.hallCluster.send({ eventName: "RequestRoleState", dataString: sidJson, sid: ""});
 
-                SocketApp.battleCluster.send({ eventName: "BattleLoadField", dataString: _roleArray, sid: ""});
+            this.on("RequestRoleState", (_sidJson, nothing) => {
+
+                SocketApp.battleCluster.send({ eventName: "BattleLoadField", dataString: _sidJson, sid: ""});
 
             })
 
@@ -395,45 +404,39 @@ class SocketApp extends event {
     }
 
     // 玩家移动 回应
-    // dataString = fieldInfo
+    // dataString = {sidArray: sidArray, moveInfo: moveInfo}
     battleMoveRes(dataString, sid) {
 
         process.nextTick(() => {
 
-            let fieldInfo = JSON.parse(dataString);
+            let sidArray = dataString.sidArray;
 
-            let roleArray = fieldInfo.roleArray;
-
-            let sidArray = [];
-
-            let moveInfo = new MoveInfo();
-
-            for (let i in roleArray) {
-
-                let role = roleArray[i];
-
-                let _sid = role.sid;
-
-                sidArray.push(_sid);
-
-                if (_sid == sid) {
-
-                    moveInfo.d = _sid;
-
-                    moveInfo.v = role.vecArray;
-
-                    moveInfo.i = role.inRoleArrayIndex;
-                    
-                }
-            }
-
-            // console.log("广播移动");
-
-            // console.log("服务器Sid", CuteUDP.socketId);
+            let moveInfo = dataString.moveInfo;
 
             SocketApp.instance.cuteUDP.emitBrocast("BattleMoveRecv", JSON.stringify(moveInfo), sidArray, sid);
                             
         })
+    }
+
+    // 玩家取消移动 请求
+    // dataString = ""
+    cancelMoveReq(dataString, sid) {
+
+        process.nextTick(() => {
+
+            SocketApp.battleCluster.send({ eventName: "CancelMove", dataString: "", sid: sid});
+
+        })
+    }
+
+    // 玩家取消移动 回应
+    // dataString = sidArray
+    cancelMoveRes(dataString, sid) {
+
+        let sidArray = dataString;
+
+        SocketApp.instance.cuteUDP.emitBrocast("CancelMoveRecv", sid, sidArray, sid);
+
     }
 }
 

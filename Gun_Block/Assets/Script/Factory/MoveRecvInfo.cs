@@ -1,9 +1,13 @@
 
 public class MoveInfo {
 
-    public string sid = "";
+    public string d = ""; // sid
 
-    public int inRoleArrayIndex = -1;
+    public int[] v; // vecArray
 
-    public float[] vecArray = new float[3];
+    public MoveInfo(int[] v) {
+
+        this.v = v;
+
+    }
 }

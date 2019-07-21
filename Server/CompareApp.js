@@ -62,13 +62,17 @@ class CompareApp extends event {
                         // 如果1V1 模式列表内有超过2人，则拉出这两人
                         if (perModeList.length >= 2) {
 
-                            let a = perModeList.shift();
+                            let sidJson = new Object();
 
-                            let b = perModeList.shift();
+                            for (let i = 0; i < 2; i += 1) {
 
-                            console.log(a, "和", b, "匹配成功");
+                                let sid = perModeList.shift();
 
-                            process.send({ eventName: "CompareSuccess", dataString: [a, b], sid: "" });
+                                sidJson[sid] = {};
+
+                            }
+
+                            process.send({ eventName: "CompareSuccess", dataString: sidJson, sid: "" });
 
                         } else {
 

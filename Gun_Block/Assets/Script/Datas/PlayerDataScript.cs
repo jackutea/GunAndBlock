@@ -5,8 +5,8 @@ using UnityEngine;
 public class PlayerDataScript {
 
     public static string USER_NAME = "";
-    public static int ROLE_INDEX = -1;
-    public static List<RoleState> ROLES = new List<RoleState>();
+    public static string ROLE_NAME = "";
+    public static Dictionary<string, RoleState> ROLES = new Dictionary<string, RoleState>();
     public static RoleState ROLE_STATE = null;
     public static FieldInfo FIELD_INFO = null;
     

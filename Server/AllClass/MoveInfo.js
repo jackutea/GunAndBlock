@@ -5,8 +5,6 @@ class MoveInfo {
 
         this.d = ""; // sid
 
-        this.i = -1; // inRoleArrayIndex
-
         this.v = []; // vecArray
 
     }

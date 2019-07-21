@@ -32,7 +32,7 @@ public class RoleState{
     public float moveSpeedOrigin = 2f;
     public float moveSpeed = 2f;
     public float shootSpeed = 4f;
-    public float[] vecArray = new float[3];
+    public int[] vecArray = new int[2];
     public bool isLeftAlly = true;
     public bool isBlocking = false;
     public bool isPerfectBlocking = false;

@@ -16,7 +16,7 @@ public class FieldScript : MonoBehaviour {
     public FieldInfo fieldInfo;
     public int fieldId;
     public int modeCode;
-    public RoleState[] roleStateArray;
+    public Dictionary<string, RoleState> sidJson;
     public static Dictionary<string, GameObject> roleInstanceDic;
 
     void Awake() {
@@ -38,7 +38,7 @@ public class FieldScript : MonoBehaviour {
 
         modeCode = fieldInfo.modeCode;
 
-        roleStateArray = fieldInfo.roleArray;
+        sidJson = fieldInfo.sidJson;
 
         roleInstanceDic = new Dictionary<string, GameObject>();
 
@@ -57,17 +57,19 @@ public class FieldScript : MonoBehaviour {
     // 生成角色 me & other
     void born() {
 
-        for (int i = 0; i < roleStateArray.Length; i += 1) {
+        List<string> sidList = new List<string>(sidJson.Keys);
 
-            RoleState role = roleStateArray[i];
+        for (int i = 0; i < sidJson.Count; i += 1) {
+            
+            string sid = sidList[i];
+
+            RoleState role = sidJson[sid];
 
             GameObject roleObj = Instantiate(PrefabCollection.instance.rolePrefab, battlePanel.transform);
 
             roleObj.name = role.sid;
 
             RoleScript roleScript = roleObj.GetComponentInChildren<RoleScript>();
-
-            roleScript.index = i;
 
             roleScript.roleState = role;
 
@@ -97,26 +99,39 @@ public class FieldScript : MonoBehaviour {
         }
     }
 
-    // 触发移动更新
-    public static void BattleMove(string sid, float[] vecArray) {
+    // 他人移动
+    public static void BattleMove(string sid, int[] vecArray) {
 
-        Vector3 po = new Vector3(vecArray[0], vecArray[1], vecArray[2]);
+        Vector2 po = new Vector2(vecArray[0], vecArray[1]);
 
         GameObject go = GameObject.Find(sid);
+
+        RoleScript roleScript = go.GetComponent<RoleScript>();
+
+        roleScript.roleState.isMoving = true;
 
         if (go == null) {
 
             Debug.LogWarning("找不到对象 :" + sid);
             
-            Debug.LogWarning("将要移动到的坐标是 :" + po);
-
             return;
 
         }
 
         go.transform.localPosition = po;
 
-        Debug.LogWarning("触发了移动");
+    }
+
+    // 他人取消移动
+    public static void CancelMove(string sid) {
+
+        GameObject go = GameObject.Find(sid);
+
+        RoleScript roleScript = go.GetComponent<RoleScript>();
+
+        roleScript.roleState.isMoving = false;
+
+        Debug.Log(sid + " : 取消了移动");
 
     }
     
