@@ -135,8 +135,43 @@ MonoBehaviour:
   roleInstance: {fileID: 0}
   roleSpriteRenderer: {fileID: 0}
   bulletInstance: {fileID: 0}
+  roleState:
+    sid: 
+    username: 
+    roleName: 
+    level: 1
+    exp: 0
+    rank: 0
+    score: 0
+    gold: 0
+    inServerId: -1
+    inComparingMode: -1
+    inFieldId: -1
+    life: 5
+    blockLife: 3
+    damage: 1
+    shootGapOrigin: 1
+    shootGap: 0
+    blockGapOrigin: 0.5
+    blockGap: 0
+    perfectBlockLastOrigin: 0.2
+    perfectBlockLast: 0
+    moveSpeedOrigin: 2
+    moveSpeed: 2
+    shootSpeed: 4
+    vecArray: 0000000000000000
+    isLeftAlly: 1
+    isBlocking: 0
+    isPerfectBlocking: 0
+    isMoving: 0
+    isReloading: 0
+    isDead: 0
   roleCollider: {fileID: 0}
   roleAni: {fileID: 0}
+  isMe: 0
+  currentX: 0
+  currentY: 0
+  socketSendGap: 0
 --- !u!65 &4208489684400535565
 BoxCollider:
   m_ObjectHideFlags: 0

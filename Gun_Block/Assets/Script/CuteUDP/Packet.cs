@@ -3,6 +3,8 @@ using System.Text;
 using System.Net;
 using System.Collections.Generic;
 using UnityEngine;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace CuteUDPApp {
     // CuteContent 就是一个包对象
@@ -12,7 +14,7 @@ namespace CuteUDPApp {
 
         // 包参数
         public int perLength; // 字符串切割长度
-        public double sendTimeSample; // 发送的时间
+        public int sendTimeSample; // 发送的时间
         public bool packetHeaderRecvState; // 包头 回馈状态
         public bool miniPacketListRecvState; // 小包列表 回馈状态
         public string toIp; // 发往的IP
@@ -64,7 +66,7 @@ namespace CuteUDPApp {
 
             this.perLength = CuteUDP.perLength;
 
-            this.sendTimeSample = new TimeSpan(DateTime.Now.Ticks).TotalMilliseconds;
+            this.sendTimeSample = DateTime.Now.Millisecond;
 
             this.packetHeaderRecvState = false;
 
@@ -74,7 +76,7 @@ namespace CuteUDPApp {
 
         byte[] getHeaderBytes() {
 
-            string sendStr = JsonUtility.ToJson(this.packetHeader);
+            string sendStr = JsonConvert.SerializeObject(this.packetHeader);
 
             byte[] packetCodeBytes = Encoding.UTF8.GetBytes("0");
 
@@ -131,7 +133,7 @@ namespace CuteUDPApp {
 
                 string s = this.orginStr.Substring(index, p);
 
-                string sendStr = JsonUtility.ToJson(new MiniPacket(i, s));
+                string sendStr = JsonConvert.SerializeObject(new MiniPacket(i, s));
 
                 byte[] packetCodeBytes = Encoding.UTF8.GetBytes("2");
 

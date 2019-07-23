@@ -3,8 +3,6 @@ var cluster = require("cluster");
 
 var CuteUDP = require("./CuteUDP/CuteUDP");
 
-var MoveInfo = require("./AllClass/MoveInfo");
-
 // 主进程，负责 I/O 调度
 class SocketApp extends event {
 
@@ -73,29 +71,55 @@ class SocketApp extends event {
     initCuteUDPListener() {
 
         // Hall Cluster 负责处理
-        this.cuteUDP.on("Register", this.registerReq); // 注册
+        // 注册
+        this.cuteUDP.on("Register", (dataString, sid) => { this.clusterReq("hall", dataString, sid, "Register"); }); 
 
-        this.cuteUDP.on("Login", this.loginReq); // 登录
+        // 登录
+        this.cuteUDP.on("Login", (dataString, sid) => { this.clusterReq("hall", dataString, sid, "Login"); }); 
 
-        this.cuteUDP.on("ShowRole", this.showRoleReq); // 显示角色列表
+        // 显示角色列表
+        this.cuteUDP.on("ShowRoles", (dataString, sid) => { this.clusterReq("hall", dataString, sid, "ShowRoles"); }); 
 
-        this.cuteUDP.on("CreateRole", this.createRoleReq); // 创建角色
+        // 创建角色
+        this.cuteUDP.on("CreateRole", (dataString, sid) => { this.clusterReq("hall", dataString, sid, "CreateRole"); }); 
 
-        this.cuteUDP.on("DeleteRole", this.deleteRoleReq); // 删除角色
+        // 删除角色
+        this.cuteUDP.on("DeleteRole", (dataString, sid) => { this.clusterReq("hall", dataString, sid, "DeleteRole"); }); 
 
-        this.cuteUDP.on("EnterGame", this.enterGameReq); // 选定角色后进入游戏
+        // 选定角色后进入游戏
+        this.cuteUDP.on("EnterGame", (dataString, sid) => { this.clusterReq("hall", dataString, sid, "EnterGame"); }); 
 
-        this.cuteUDP.on("ShowServer", this.showServerReq); // 显示服务器列表
+        // 显示服务器列表
+        this.cuteUDP.on("ShowServer", (dataString, sid) => { this.clusterReq("hall", dataString, sid, "ShowServer"); }); 
 
-        this.cuteUDP.on("ShowRoom", this.showRoomReq); // 显示服务器自定义房间
+        // 显示服务器自定义房间
+        // this.cuteUDP.on("ShowRoom", (dataString, sid) => { this.clusterReq("hall", dataString, sid, "ShowRoom"); }); 
 
         // Compare Cluster 负责处理
-        this.cuteUDP.on("Compare", this.compareReq); // 匹配申请
+        // 匹配申请
+        this.cuteUDP.on("Compare", this.compareReq); 
 
         // Battle Cluster 负责处理
-        this.cuteUDP.on("BattleMove", this.battleMoveReq); // 移动
+        this.cuteUDP.on("Move", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "Move"); }); 
 
-        this.on("CancelMove", this.cancelMoveReq); // 取消移动
+        this.cuteUDP.on("CancelMove", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CancelMove"); }); 
+
+        this.cuteUDP.on("Block", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "Block"); }); 
+
+        this.cuteUDP.on("CancelBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CancelBlock"); }); 
+
+        this.cuteUDP.on("PerfectBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "PerfectBlock"); }); 
+
+        this.cuteUDP.on("CancelPerfectBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CancelPerfectBlock"); }); 
+
+        this.cuteUDP.on("Shoot", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "Shoot"); }); 
+
+        this.cuteUDP.on("PerfectBlockBullet", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "PerfectBlockBullet"); }); 
+
+        this.cuteUDP.on("BlockBullet", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "BlockBullet"); }); 
+
+        this.cuteUDP.on("BeAttacked", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "BeAttacked"); }); 
+
 
     }
 
@@ -108,223 +132,108 @@ class SocketApp extends event {
 
         })
 
-        // Hall Cluster 处理完回传
-        this.on("Register", this.registerRes); // 注册
+        // ———— Hall Cluster ————
+        // 注册
+        this.on("Register", (dataString, sid) => { this.socketRes(dataString, sid, "Register"); });
 
-        this.on("Login", this.loginRes); // 登录
+        // 登录
+        this.on("Login", (dataString, sid) => { this.socketRes(dataString, sid, "Login"); });
 
-        this.on("ShowRole", this.showRoleRes); // 显示角色列表
+        // 显示服务器
+        this.on("ShowServer", (dataString, sid) => { this.socketRes(dataString, sid, "ShowServer"); });
 
-        this.on("CreateRole", this.createRoleRes); // 创建角色
+        // 显示角色
+        this.on("ShowRoles", (dataString, sid) => { this.socketRes(dataString, sid, "ShowRoles"); });
 
-        this.on("DeleteRole", this.deleteRoleRes); // 删除角色
+        // 创建角色 成功
+        this.on("CreateRole", (dataString, sid) => { this.socketRes(dataString, sid, "CreateRole"); });
 
-        this.on("EnterGame", this.enterGameRes); // 选定角色后进入游戏
+        // 创建角色 失败
+        this.on("CreateRoleFail", (dataString, sid) => { this.socketRes(dataString, sid, "CreateRoleFail"); });
 
-        this.on("ShowServer", this.showServerRes); // 显示服务器列表
+        // 删除角色
+        this.on("DeleteRole", (dataString, sid) => { this.socketRes(dataString, sid, "DeleteRole"); });
 
-        this.on("ShowRoom", this.showRoomRes); // 显示服务器自定义房间
+        // 进入游戏
+        this.on("EnterGame", (dataString, sid) => { this.socketRes(dataString, sid, "EnterGame"); });
 
-        // Compare Cluster 处理完回传
-        this.on("Compare", this.compareRes); // 匹配申请
+        // 显示服务器自定义房间
+        // this.on("ShowRoom", (dataString, sid) => { this.socketRes(dataString, sid, "ShowRoom"); });
+
+        // ———— Compare Cluster ————
+        this.on("CompareWait", (dataString, sid) => { this.socketRes(dataString, sid, "CompareWait"); });
 
         this.on("CompareSuccess", this.compareSucessRes); // 匹配成功
 
-        // Battle Cluster 处理完回传
-        this.on("BattleMove", this.battleMoveRes); // 移动数据插入成功
+        // ———— Battle Cluster ————
+        // 移动
+        this.on("Move", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "Move"); });
 
-        this.on("CancelMove", this.cancelMoveRes); // 取消移动
+        this.on("CancelMove", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CancelMove"); });
 
+        this.on("Block", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "Block"); });
+
+        this.on("CancelBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CancelBlock"); });
+
+        this.on("PerfectBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "PerfectBlock"); });
+
+        this.on("CancelPerfectBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CancelPerfectBlock"); });
+
+        this.on("Shoot", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "Shoot"); });
+
+        this.on("PerfectBlockBullet", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "PerfectBlockBullet"); });
+
+        this.on("BlockBullet", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "BlockBullet"); });
+
+        this.on("BeAttacked", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "BeAttacked"); });
     }
 
-    // 注册 请求
-    // dataString = C# class UserSendInfo
-    registerReq(dataString, sid) {
+    // 进程请求
+    clusterReq(clusterName, dataString, sid, eventName) {
 
         process.nextTick(() => {
 
-            SocketApp.hallCluster.send({eventName : "Register", dataString : dataString, sid : sid});
+            switch(clusterName) {
 
-        })
-    }
+                case "hall": SocketApp.hallCluster.send({eventName: eventName, dataString: dataString, sid: sid}); break;
 
-    // 注册 回应
-    // dataString = js class LoginSendInfo
-    registerRes(dataString, sid) {
+                case "compare": SocketApp.compareCluster.send({eventName: eventName, dataString: dataString, sid: sid}); break;
 
-        process.nextTick(() => {
+                case "battle": SocketApp.battleCluster.send({eventName: eventName, dataString: dataString, sid: sid}); break;
 
-            this.cuteUDP.emitBackTo("LoginRecv", dataString, sid);
-
-        })
-    }
-
-    // 登录 请求
-    // dataString = C# class UserSendInfo
-    loginReq(dataString, sid) {
-
-        process.nextTick(() => {
-
-            SocketApp.hallCluster.send({ eventName: "Login", dataString: dataString, sid: sid });
-            
-        })
-    }
-
-    // 登录 回应
-    // dataString = js class LoginSendInfo
-    loginRes(dataString, sid) {
-
-        process.nextTick(() => {
-
-            this.cuteUDP.emitBackTo("LoginRecv", dataString, sid);
-            
-        })
-    }
-
-    // 显示服务器 请求
-    // dataString = ""
-    showServerReq(dataString, sid) {
-
-        process.nextTick(() => {
-
-            SocketApp.hallCluster.send({ eventName: "ShowServer", dataString: dataString, sid: sid })
-            
-        })
-    }
-
-    // 显示服务器 回应
-    // dataString = js class ServerSendInfo
-    showServerRes(dataString, sid) {
-
-        process.nextTick(() => {
-
-            this.cuteUDP.emitBackTo("ShowServerRecv", dataString, sid);
-            
-        })
-    }
-
-    // 显示角色 请求
-    // dataString = int serverId
-    showRoleReq(dataString, sid) {
-
-        process.nextTick(() => {
-
-            let serverId = dataString;
-
-            SocketApp.hallCluster.send({ eventName: "ShowRole", dataString: serverId, sid: sid })
-                    
-        })
-    }
-
-    // 显示角色 回应
-    // dataString = class RoleListSendInfo
-    showRoleRes(dataString, sid) {
-
-        process.nextTick(() => {
-
-            let roleListSendInfo = dataString;
-
-            this.cuteUDP.emitBackTo("ShowRoleRecv", JSON.stringify(roleListSendInfo), sid);
-            
-        })
-    }
-
-    // 创建角色 请求
-    // dataString = C# class CreateRoleSendInfo
-    createRoleReq(dataString, sid) {
-
-        process.nextTick(() => {
-
-            SocketApp.hallCluster.send({ eventName: "CreateRole", dataString: dataString, sid: sid })
-                    
-        })
-    }
-
-    // 创建角色 回应
-    // dataString = "" 创建失败
-    // dataString = class RoleState 创建成功
-    createRoleRes(dataString, sid) {
-
-        process.nextTick(() => {
-
-            if (dataString.length < 2) {
-
-                this.cuteUDP.emitBackTo("CreateRoleFailRecv", dataString, sid);
-
-            } else {
-
-                this.cuteUDP.emitBackTo("CreateRoleRecv", dataString, sid);
+                default: console.log("进程名错误"); break;
 
             }
-                    
+
+            console.log(sid, "向", clusterName, "请求处理", eventName);
+
         })
     }
 
-    // 删除角色 请求
-    // dataString = roleName
-    deleteRoleReq(dataString, sid) {
+    // 网络回应
+    socketRes(dataString, sid, eventName) {
 
         process.nextTick(() => {
 
-            let roleName = dataString;
+            console.log("向", sid, "回传", eventName);
 
-            SocketApp.hallCluster.send({ eventName: "DeleteRole", dataString: roleName, sid: sid })
-            
+            this.cuteUDP.emitBackTo(eventName, dataString, sid);
+
         })
     }
 
-    // 删除角色 回应
-    // dataString = roleName
-    deleteRoleRes(dataString, sid) {
+    // 战斗 网络回应
+    battleSocketRes(dataJson, sid, eventName) {
 
         process.nextTick(() => {
 
-            let roleName = dataString;
+            let data = dataJson.data;
 
-            this.cuteUDP.emitBackTo("DeleteRoleRecv", roleName, sid);
-            
+            let sidArray = dataJson.sidArray;
+
+            this.cuteUDP.emitBrocast(eventName, data, sidArray, sid);
+                            
         })
-    }
-
-    // 进入游戏 请求
-    // dataString = class RoleState
-    enterGameReq(dataString, sid) {
-
-        process.nextTick(() => {
-
-            SocketApp.hallCluster.send({ eventName: "EnterGame", dataString: dataString, sid: sid })
-            
-        })
-    }
-
-    // 进入游戏 回应
-    // dataString = ""
-    enterGameRes(dataString, sid) {
-
-        process.nextTick(() => {
-
-            this.cuteUDP.emitBackTo("EnterGameRecv", dataString, sid);
-            
-        })
-    }
-
-    // TODO : 显示自定义房间 请求 
-    showRoomReq(dataString, sid) {
-
-        process.nextTick(() => {
-
-            let serverId = parseInt(dataString);
-
-            let roomSendInfo = new Factory.RoomSendInfo(serverId);
-
-            this.cuteUDP.emitBackTo("ShowRoomRecv", JSON.stringify(roomSendInfo), sid);
-            
-        })
-    }
-
-    // TODO : 显示自定义房间 回应
-    showRoomRes(dataString, sid) {
-
     }
 
     // 开始匹配 请求
@@ -348,17 +257,6 @@ class SocketApp extends event {
         })
     }
 
-    // 开始匹配 回应
-    // dataString = modeCode
-    compareRes(dataString, sid) {
-
-        process.nextTick(() => {
-
-            this.cuteUDP.emitBackTo("CompareWaitRecv", dataString, sid);
-            
-        })
-    }
-
     // 匹配成功 回应
     // 向HALL请求玩家数据，成功后向BATTLE注入战斗数据，注入成功后，推送给客户端
     // dataString = sidJson 键值对为 sid : {}
@@ -366,7 +264,7 @@ class SocketApp extends event {
 
         process.nextTick(() => {
 
-            let sidJson = dataString;
+            let sidJson = JSON.parse(dataString);
 
             let sidArray = Object.keys(sidJson);
 
@@ -384,60 +282,12 @@ class SocketApp extends event {
 
                 let fieldInfo = _fieldInfo;
 
-                SocketApp.instance.cuteUDP.emitBrocast("CompareSuccessRecv", JSON.stringify(fieldInfo), sidArray, true);
+                SocketApp.instance.cuteUDP.emitBrocast("CompareSuccess", JSON.stringify(fieldInfo), sidArray, true);
 
             });
         })
     }
 
-    // 玩家移动 请求
-    // dataString = MoveInfo
-    battleMoveReq(dataString, sid) {
-
-        process.nextTick(() => {
-
-            let moveInfo = dataString;
-
-            SocketApp.battleCluster.send({ eventName: "BattleMove", dataString: moveInfo, sid: sid});
-                    
-        })
-    }
-
-    // 玩家移动 回应
-    // dataString = {sidArray: sidArray, moveInfo: moveInfo}
-    battleMoveRes(dataString, sid) {
-
-        process.nextTick(() => {
-
-            let sidArray = dataString.sidArray;
-
-            let moveInfo = dataString.moveInfo;
-
-            SocketApp.instance.cuteUDP.emitBrocast("BattleMoveRecv", JSON.stringify(moveInfo), sidArray, sid);
-                            
-        })
-    }
-
-    // 玩家取消移动 请求
-    // dataString = ""
-    cancelMoveReq(dataString, sid) {
-
-        process.nextTick(() => {
-
-            SocketApp.battleCluster.send({ eventName: "CancelMove", dataString: "", sid: sid});
-
-        })
-    }
-
-    // 玩家取消移动 回应
-    // dataString = sidArray
-    cancelMoveRes(dataString, sid) {
-
-        let sidArray = dataString;
-
-        SocketApp.instance.cuteUDP.emitBrocast("CancelMoveRecv", sid, sidArray, sid);
-
-    }
 }
 
 module.exports = SocketApp;

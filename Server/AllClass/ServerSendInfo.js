@@ -18,9 +18,11 @@ class ServerSendInfo {
 
             let serverInfo = HALL_GD.SERVER_LIST[serverId];
 
+            serverInfo.onlineUserCount = Object.keys(HALL_GD.ONLINE_ACCOUNT).length;
+
             this.serverIdList.push(serverInfo.serverId);
 
-            this.serverUserCountList.push(serverInfo.getOnlineUserCount());
+            this.serverUserCountList.push(serverInfo.onlineUserCount);
 
         }
     }

@@ -40,9 +40,9 @@ class RoleState {
         
         this.blockGap = 0.0;
         
-        this.perfectBlockGapOrigin = 0.2;
+        this.perfectBlockLastOrigin = 0.2;
         
-        this.perfectBlockGap = 0.0;
+        this.perfectBlockLast = 0.0;
         
         this.moveSpeedOrigin = 2.0;
         

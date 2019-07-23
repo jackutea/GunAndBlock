@@ -72,7 +72,7 @@ class CompareApp extends event {
 
                             }
 
-                            process.send({ eventName: "CompareSuccess", dataString: sidJson, sid: "" });
+                            process.send({ eventName: "CompareSuccess", dataString: JSON.stringify(sidJson), sid: "" });
 
                         } else {
 
@@ -188,7 +188,7 @@ class CompareApp extends event {
 
             searchList[searchLevelIndex][modeCode].push(sid);
 
-            process.send({ eventName: "Compare", dataString: modeCode.toString(), sid: sid })
+            process.send({ eventName: "CompareWait", dataString: modeCode.toString(), sid: sid })
                     
         })
     }

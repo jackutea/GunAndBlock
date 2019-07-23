@@ -122,7 +122,7 @@ public class HomeScript : MonoBehaviour {
         
         blockGap.text = "格挡时间间隔 : " + rs.blockGap.ToString();
         
-        perfectBlockLast.text = "完美格挡持续时间 : " + rs.perfectBlockGap.ToString();
+        perfectBlockLast.text = "完美格挡持续时间 : " + rs.perfectBlockLast.ToString();
         
         moveSpeed.text = "移动速度 : " + rs.moveSpeed.ToString();
         

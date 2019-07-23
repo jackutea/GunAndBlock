@@ -1,28 +1,20 @@
-﻿using System.Collections;
+﻿using System;
+using System.Text;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BulletState {
-    public bool isColRole = false;
-    public bool isColBlock = false;
-    public bool isColOut = false;
-}
 public class BulletScript : MonoBehaviour {
 
     public RectTransform battlePanelRect;
-    public bool isShootToRight;
-    public float shootSpeed;
-    public BulletState bulletState;
-
-    public float direct = 1;
+    public BulletInfo bulletInfo;
+    // public float shootSpeed;
+    // public float direct = 1;
+    // public float dmg;
 
     void Awake() {
 
-        isShootToRight = true;
-
-        shootSpeed = 1f;
-
-        bulletState = new BulletState();
+        // bulletInfo = new BulletInfo(PlayerDataScript.sid);
 
     }
 
@@ -31,6 +23,8 @@ public class BulletScript : MonoBehaviour {
         battlePanelRect = transform.parent.GetComponent<RectTransform>();
 
     }
+
+    
 
     void Update() {
         
@@ -42,15 +36,7 @@ public class BulletScript : MonoBehaviour {
 
     void onFlying() {
 
-        gameObject.transform.Translate(Vector3.right * direct * shootSpeed * Time.deltaTime);
-
-    }
-
-    void onRole() {
-
-    }
-
-    void onBlock() {
+        gameObject.transform.Translate(Vector3.right * bulletInfo.direct * bulletInfo.shootSpeed * Time.deltaTime);
 
     }
 
@@ -58,14 +44,14 @@ public class BulletScript : MonoBehaviour {
 
         if (transform.localPosition.x > battlePanelRect.rect.width / 2 || transform.localPosition.x < - battlePanelRect.rect.width / 2) {
 
-            DestroyImmediate(this.gameObject);
+            Destroy(this.gameObject);
 
         }
     }
 
-    void OnTriggerEnter (Collider col) {
+    // void OnTriggerEnter (Collider col) {
 
         // Debug.Log("out" + col.name);
         
-    }
+    // }
 }

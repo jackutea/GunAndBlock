@@ -8,5 +8,6 @@ public class FieldInfo {
     public int fieldId; 
     public int modeCode;
     public Dictionary<string, RoleState> sidJson;
+    public Dictionary<string, BulletInfo> bidJson;
 
 }

@@ -6,7 +6,7 @@ namespace CuteUDPApp {
     [Serializable]
     public class BasePacket {
         public PacketHeader packetHeader;
-        public double recvTimeSample;
+        public int recvTimeSample;
         public string[] jointStr;
         public string fullStr;
         public int recvMiniCount;
@@ -18,7 +18,7 @@ namespace CuteUDPApp {
 
             this.packetHeader = packetHeader;
 
-            this.recvTimeSample = new TimeSpan(DateTime.Now.Ticks).TotalMilliseconds;
+            this.recvTimeSample = DateTime.Now.Millisecond;
 
             this.jointStr =new string[packetHeader.a.Length];
 

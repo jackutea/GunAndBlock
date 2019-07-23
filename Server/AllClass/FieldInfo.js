@@ -9,6 +9,8 @@ class FieldInfo {
         
         this.sidJson = sidJson;
 
+        this.bidJson = {};
+
     }
 }
 

@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace CuteUDPApp {
 
@@ -42,7 +44,7 @@ namespace CuteUDPApp {
         // CuteUDP 配置
         public static int perLength;
         double abortTimeMs; // 总超时弃发(默认5秒)
-        public double nowTimeSample = new TimeSpan(DateTime.Now.Ticks).TotalMilliseconds; // 当前时间
+        public int nowTimeSample = DateTime.Now.Millisecond; // 当前时间
         int repeatHeaderTimeMs; // 包头 重发延时
         int repeatMiniTimeMs; // 每个小包 重发延时 (默认为 0)
         public static int count = 0; // 包头自增计数
@@ -83,7 +85,7 @@ namespace CuteUDPApp {
 
             abortTimeMs = 5000;
 
-            perLength = 128;
+            perLength = 256;
 
             repeatHeaderTimeMs = 20; // 包头 重发延时
 
@@ -146,20 +148,18 @@ namespace CuteUDPApp {
             }
             
             // 创建发送线程
-            sendThread = new Thread(new ParameterizedThreadStart(recvUpdating));
+            sendThread = new Thread(new ThreadStart(sendUpdating));
 
-            sendThread.Name = "recvThread";
+            sendThread.Name = "sendThread";
             
-            sendThread.Start(false); // false 为启动阻塞接收线程
-
-            // sendThread.Start(true); // true 为启动非阻塞接收线程， 这里有BUG
+            sendThread.Start();
 
             // 创建接收线程
-            recvThread = new Thread(new ThreadStart(sendUpdating));
+            recvThread = new Thread(new ThreadStart(recvUpdating));
 
-            recvThread.Name = "sendThread";
+            recvThread.Name = "recvThread";
 
-            recvThread.Start();
+            recvThread.Start(); // 启动阻塞接收线程
 
         }
 
@@ -195,76 +195,78 @@ namespace CuteUDPApp {
         // 发送消息(发包头)
         public void emitTo(string eventName, string obj, string ip, int port = 0, string sid = "") {
 
-            string ipOrSocketId;
+            lock(sendDic) {
 
-            if (sid != "" && soketIdToIpInfo.ContainsKey(sid)) {
+                string ipOrSocketId;
 
-                ipOrSocketId = sid;
+                if (sid != "" && soketIdToIpInfo.ContainsKey(sid)) {
 
-                ip = soketIdToIpInfo[sid].ip;
+                    ipOrSocketId = sid;
 
-                port = soketIdToIpInfo[sid].port;
+                    ip = soketIdToIpInfo[sid].ip;
 
-            } else {
+                    port = soketIdToIpInfo[sid].port;
 
-                ipOrSocketId = ip;
+                } else {
 
-                port = (port == 0) ? remotePort : port;
+                    ipOrSocketId = ip;
 
-            }
+                    port = (port == 0) ? remotePort : port;
 
-            // 如果待发列表不存在该 IP ，添加
-            if (!sendDic.ContainsKey(ipOrSocketId))
+                }
 
-                sendDic.Add(ipOrSocketId, new Dictionary<int, Packet>());
-            
-            Packet packet = new Packet(eventName, obj, ip, port);
+                // 如果待发列表不存在该 IP ，添加
+                if (!sendDic.ContainsKey(ipOrSocketId))
 
-            if (sendDic[ipOrSocketId] != null) {
+                    sendDic.Add(ipOrSocketId, new Dictionary<int, Packet>());
+                
+                Packet packet = new Packet(eventName, obj, ip, port);
 
-                if (!sendDic[ipOrSocketId].ContainsKey(packet.packetHeader.i)) {
+                if (sendDic[ipOrSocketId] != null) {
+
+                    if (!sendDic[ipOrSocketId].ContainsKey(packet.packetHeader.i)) {
+
+                        // 添加包到队末
+                        sendDic[ipOrSocketId].Add(packet.packetHeader.i, packet);
+
+                        string str = Encoding.UTF8.GetString(packet.headerBytes);
+
+                        socket.SendTo(packet.headerBytes, 0, packet.headerBytes.Length, 0, packet.toIpEndPoint);
+
+                        // Debug.Log("正在发送 :" + packet.packetHeader.n + "  至" + ip + "的" + eventName + " 至IP" + ip + ":" + port);
+
+                        // Debug.Log("内容 :" + str);
+
+                    }
+
+                } else {
+
+                    // Debug.Log("该IP ：" + ip + "不存在待发内容");
+
+                    sendDic[ipOrSocketId] = new Dictionary<int, Packet>();
 
                     // 添加包到队末
                     sendDic[ipOrSocketId].Add(packet.packetHeader.i, packet);
 
-                    string str = Encoding.UTF8.GetString(packet.headerBytes);
-
                     socket.SendTo(packet.headerBytes, 0, packet.headerBytes.Length, 0, packet.toIpEndPoint);
 
-                    Debug.Log("正在发送 :" + packet.packetHeader.i + "  至" + ip + "的" + eventName + " 至IP" + ip + ":" + port);
-
-                    // Debug.Log("内容 :" + str);
-
-                } else {
-
-                    Debug.Log("该包头" + packet.packetHeader.i + "已在IP:" + ip + "的待发列表");
-
+                    // Debug.Log("正在发送 :" + packet.packetHeader.n + "  至" + ip + "的" + eventName + " 至IP" + ip + ":" + port);
                 }
-
-            } else {
-
-                // Debug.Log("该IP ：" + ip + "不存在待发内容");
-
-                sendDic[ipOrSocketId] = new Dictionary<int, Packet>();
-
-                // 添加包到队末
-                sendDic[ipOrSocketId].Add(packet.packetHeader.i, packet);
-
-                socket.SendTo(packet.headerBytes, 0, packet.headerBytes.Length, 0, packet.toIpEndPoint);
-
-                Debug.Log("正在发送 :" + packet.packetHeader.i + "  至" + ip + "的" + eventName + " 至IP" + ip + ":" + port);
             }
         }
 
         // 回传消息
         public void emitBackTo(string eventName, string obj, string sid) {
 
-            string ip = soketIdToIpInfo[sid].ip;
+            lock(soketIdToIpInfo) {
 
-            int port = soketIdToIpInfo[sid].port;
+                string ip = soketIdToIpInfo[sid].ip;
 
-            emitTo(eventName, obj, ip, port, sid);
+                int port = soketIdToIpInfo[sid].port;
 
+                emitTo(eventName, obj, ip, port, sid);
+
+            }
         }
 
         // 向服务端发消息
@@ -277,29 +279,30 @@ namespace CuteUDPApp {
         // 向发送者反馈状态
         void responseState(string stateCode, int obj, string ip, int port) {
 
-            EndPoint ep = (EndPoint)new IPEndPoint(IPAddress.Parse(ip), port);
+            lock(this.socket) {
 
-            string sendStr = stateCode + socketId + obj.ToString();
+                EndPoint ep = (EndPoint)new IPEndPoint(IPAddress.Parse(ip), port);
 
-            // Debug.Log(sendStr);
+                string sendStr = stateCode + socketId + obj.ToString();
 
-            byte[] sendBytes = Encoding.UTF8.GetBytes(sendStr);
+                byte[] sendBytes = Encoding.UTF8.GetBytes(sendStr);
 
-            socket.SendTo(sendBytes, 0, sendBytes.Length, 0, ep);
+                socket.SendTo(sendBytes, 0, sendBytes.Length, 0, ep);
 
-            string stateString = "";
+                string stateString = "";
 
-            switch (stateCode) {
-                case "0" : stateString = "新增包头"; break;
-                case "1" : stateString = "包头确认"; break;
-                case "2" : stateString = "收到新小包"; break;
-                case "3" : stateString = "小包序号确认"; break;
-                case "4" : stateString = "小包齐全确认"; break;
-                case "5" : stateString = "断连申请"; break;
-                default : Debug.Log(stateString); break;
+                switch (stateCode) {
+                    case "0" : stateString = "新增包头"; break;
+                    case "1" : stateString = "包头确认"; break;
+                    case "2" : stateString = "收到新小包"; break;
+                    case "3" : stateString = "小包序号确认"; break;
+                    case "4" : stateString = "小包齐全确认"; break;
+                    case "5" : stateString = "断连申请"; break;
+                    default : Debug.Log(stateString); break;
+                }
+
+                // Debug.Log("发送反馈码：" + stateCode + "状态：" + stateString + "内容：" + obj.ToString());
             }
-
-            // Debug.Log("发送反馈码：" + stateCode + "状态：" + stateString + "内容：" + obj.ToString());
         }
 
         // 发送 独立循环线程
@@ -310,128 +313,132 @@ namespace CuteUDPApp {
             while(appRuning == true) {
 
                 // 实时时间
-                nowTimeSample = new TimeSpan(DateTime.Now.Ticks).TotalMilliseconds;
-                
+                nowTimeSample = DateTime.Now.Millisecond;
+
                 // 接收列表里 检测超时弃收包
-                if (recvDic.Count > 0) {
+                lock(recvDic) {
 
-                    List<string> ipstrlist = new List<string>(recvDic.Keys);
-                    
-                    for (int i = 0; i < recvDic.Count; i += 1) {
-                    
-                        string sid = ipstrlist[i];
-                    
-                        BasePacket currentBasePacket = getCurrentBasePacket(sid);
-                    
-                        if (currentBasePacket == null) continue;
+                    if (recvDic.Count > 0) {
 
-                        if (currentBasePacket.recvMiniSize >= currentBasePacket.packetHeader.getArraySize()) {
+                        List<string> ipstrlist = new List<string>(recvDic.Keys);
+                        
+                        for (int i = 0; i < recvDic.Count; i += 1) {
+                        
+                            string sid = ipstrlist[i];
+                        
+                            BasePacket currentBasePacket = getCurrentBasePacket(sid);
+                        
+                            if (currentBasePacket == null) continue;
 
-                            continue;
-                        }
+                            if (currentBasePacket.recvMiniSize >= currentBasePacket.packetHeader.getArraySize()) {
 
-                        int timeGap = (int)(nowTimeSample - currentBasePacket.recvTimeSample);
-                    
-                        if (timeGap > abortTimeMs) {
-
-                            recvDic[sid].Remove(currentBasePacket.packetHeader.i);
-
-                            if (recvDic[sid].Count == 0) {
-
-                                recvDic.Remove(sid);
-
+                                continue;
                             }
 
-                            Debug.Log("超时" + abortTimeMs + "ms，清除" + currentBasePacket.packetHeader.i + "待收包");
+                            int timeGap = nowTimeSample - currentBasePacket.recvTimeSample;
+                        
+                            if (timeGap > abortTimeMs) {
 
+                                recvDic[sid].Remove(currentBasePacket.packetHeader.i);
+
+                                if (recvDic[sid].Count == 0) {
+
+                                    recvDic.Remove(sid);
+
+                                }
+
+                                Debug.Log("超时" + abortTimeMs + "ms，清除" + currentBasePacket.packetHeader.i + "待收包");
+
+                            }
                         }
                     }
                 }
+                
+                lock(sendDic) {
 
-                // 如果待发列表无数据，跳过
-                if (sendDic.Count <= 0) return;
+                    // 如果待发列表无数据，跳过
+                    if (sendDic.Count <= 0) continue;
 
-                // 待发列表里有多个待发包
-                List<string> iplist = new List<string>(sendDic.Keys);
+                    // 待发列表里有多个待发包
+                    List<string> iplist = new List<string>(sendDic.Keys);
 
-                // 多用户循环
-                for (int i = 0; i < iplist.Count; i += 1) {
+                    // 多用户循环
+                    for (int i = 0; i < iplist.Count; i += 1) {
 
-                    // 键/值
-                    string ipOrSocketId = iplist[i];
+                        // 键/值
+                        string ipOrSocketId = iplist[i];
 
-                    Packet currentPacket = getCurrentPacket(ipOrSocketId);
+                        Packet currentPacket = getCurrentPacket(ipOrSocketId);
 
-                    // 如果该 IP 对应的包为空，跳过
-                    if (currentPacket == null) continue;
+                        // 如果该 IP 对应的包为空，跳过
+                        if (currentPacket == null) continue;
 
-                    int timeGap = (int)(nowTimeSample - currentPacket.sendTimeSample);
-                    
-                    // 如果该 IP 对应的包头已被收到，判断小包收发情况
-                    if (currentPacket.packetHeaderRecvState == true) {
+                        int timeGap = (int)(nowTimeSample - currentPacket.sendTimeSample);
 
-                        if (currentPacket.miniPacketListRecvState == true) {
+                        // 如果该 IP 对应的包头已被收到，判断小包收发情况
+                        if (currentPacket.packetHeaderRecvState == true) {
 
-                            //删除字典内的数据
-                            sendDic[ipOrSocketId].Remove(currentPacket.packetHeader.i);
+                            if (currentPacket.miniPacketListRecvState == true) {
 
-                            if (sendDic[ipOrSocketId].Count == 0) {
+                                //删除字典内的数据
+                                sendDic[ipOrSocketId].Remove(currentPacket.packetHeader.i);
+
+                                if (sendDic[ipOrSocketId].Count == 0) {
+
+                                    sendDic.Remove(ipOrSocketId);
+
+                                }
+
+                                continue;
+                            }
+
+                            // 重复发未被收到的小包
+                            if (timeGap % repeatMiniTimeMs == 0) {
+
+                                for (int o = 0; o < currentPacket.miniPacketCheckList.Length; o += 1) {
+
+                                    string hasStr = currentPacket.miniPacketCheckList[o];
+
+                                    if (hasStr != "1") {
+
+                                        // 发送未被收到的小包
+                                        socket.SendTo(currentPacket.miniPacketList[o], 0, currentPacket.miniPacketList[o].Length, 0, currentPacket.toIpEndPoint);
+
+                                    }
+                                }
+                            }
+
+                        } else {
+
+                            // 包头未被对方收到，隔一段时间重发包头
+                            if (timeGap > abortTimeMs) {
 
                                 sendDic.Remove(ipOrSocketId);
 
+                                Debug.Log("超时" + abortTimeMs + "ms，清空" + ipOrSocketId + "所有待发包");
+
+                                continue;
                             }
 
-                            continue;
-                        }
+                            if (timeGap % repeatHeaderTimeMs == 0) {
 
-                        // 重复发未被收到的小包
-                        if (timeGap % repeatMiniTimeMs == 0) {
+                                socket.SendTo(currentPacket.headerBytes, 0, currentPacket.headerBytes.Length, 0, currentPacket.toIpEndPoint);
 
-                            for (int o = 0; o < currentPacket.miniPacketCheckList.Length; o += 1) {
+                                // Debug.Log("正在发送包头" + currentPacket.packetHeader.i);
 
-                                string hasStr = currentPacket.miniPacketCheckList[o];
-
-                                if (hasStr != "1") {
-
-                                    // 发送未被收到的小包
-                                    socket.SendTo(currentPacket.miniPacketList[o], 0, currentPacket.miniPacketList[o].Length, 0, currentPacket.toIpEndPoint);
-
-                                }
                             }
-                        }
-
-                    } else {
-
-                        // 包头未被对方收到，隔一段时间重发包头
-                        if (timeGap > abortTimeMs) {
-
-                            sendDic.Remove(ipOrSocketId);
-
-                            Debug.Log("超时" + abortTimeMs + "ms，清空" + ipOrSocketId + "所有待发包");
-
-                            continue;
-                        }
-
-                        if (timeGap % repeatHeaderTimeMs == 0) {
-
-                            socket.SendTo(currentPacket.headerBytes, 0, currentPacket.headerBytes.Length, 0, currentPacket.toIpEndPoint);
-
-                            // Debug.Log("正在发送包头" + currentPacket.packetHeader.i);
-
                         }
                     }
                 }
-                
+
                 Thread.Sleep(1);
             }
         }
 
         // 接收线程（阻塞版）
-        void recvUpdating(object asyncBoolState) {
+        void recvUpdating() {
 
-            bool isAsync = (bool)asyncBoolState;
-
-            while(appRuning == true && !isAsync) {
+            while(appRuning == true) {
 
                 if (socket == null || socket.Available == 0) {
 
@@ -439,7 +446,7 @@ namespace CuteUDPApp {
                     
                 }
 
-                byte[] recvBytes = new byte[256];
+                byte[] recvBytes = new byte[512];
 
                 int l;
 
@@ -542,187 +549,185 @@ namespace CuteUDPApp {
         // 0 收到新包头 转 PacketHeader 类型
         void addHeader(string dataString, string ip, int port, string sid) {
 
-            PacketHeader packetHeader = JsonUtility.FromJson<PacketHeader>(dataString);
+            lock(recvDic) {
 
-            if (!recvDic.ContainsKey(sid)) {
+                PacketHeader packetHeader = JsonConvert.DeserializeObject<PacketHeader>(dataString);
 
-                recvDic.Add(sid, new Dictionary<int, BasePacket>());
+                if (!recvDic.ContainsKey(sid)) {
 
-            }
-
-            soketIdToIpInfo[sid] = new IpInfo(ip, port);
-
-            BasePacket bp = new BasePacket(packetHeader, ip, port);
-
-            int headerId = packetHeader.i;
-
-            Debug.LogWarning("收到包头ID" + packetHeader.i);
-
-            if (recvDic[sid] == null || !recvDic[sid].ContainsKey(headerId)) {
-
-                recvDic[sid] = new Dictionary<int, BasePacket>();
-
-                recvDic[sid].Add(headerId, bp);
-
-                // Debug.Log("正在处理包头");
-                
-            }
-
-            // 空包，直接触发
-            if (packetHeader.a[0] == 0) {
-                
-                // 触发自定义事件
-                invokeEvent<string, string>(packetHeader.n, "", sid);
-
-                // 触发完删除旧包头
-                recvDic[sid].Remove(packetHeader.i);
-
-                if (recvDic[sid].Count == 0) {
-
-                    recvDic.Remove(sid);
+                    recvDic.Add(sid, new Dictionary<int, BasePacket>());
 
                 }
 
-                // 发送小包齐全声明
-                responseState("4", packetHeader.i, ip, port);
+                soketIdToIpInfo[sid] = new IpInfo(ip, port);
 
-                return;
+                BasePacket bp = new BasePacket(packetHeader, ip, port);
+
+                int headerId = packetHeader.i;
+
+                // Debug.LogWarning("收到包头事件" + packetHeader.n);
+
+                if (recvDic[sid] == null || !recvDic[sid].ContainsKey(headerId)) {
+
+                    recvDic[sid] = new Dictionary<int, BasePacket>();
+
+                    recvDic[sid].Add(headerId, bp);
+
+                    // Debug.Log("正在处理包头");
+                    
+                }
+
+                // 空包，直接触发
+                if (packetHeader.a[0] == 0) {
+                    
+                    // 触发自定义事件
+                    invokeEvent<string>(packetHeader.n, "");
+
+                    // Debug.LogWarning("空包，触发包头事件" + packetHeader.n);
+
+                    // 触发完删除旧包头
+                    recvDic[sid].Remove(packetHeader.i);
+
+                    if (recvDic[sid].Count == 0) {
+
+                        recvDic.Remove(sid);
+
+                    }
+
+                    // 发送小包齐全声明
+                    responseState("4", packetHeader.i, ip, port);
+
+                    return;
+
+                }
+
+                // 反馈收到新包头
+                responseState("1", headerId, ip, port);
 
             }
-
-            // 反馈收到新包头
-            responseState("1", headerId, ip, port);
-
         }
 
         // 1 收到包头确认 转 int 类型（对应的是 headerId）
         void headerRecieved(string dataString, string ip, int port, string sid) {
-            
-            int headerId = int.Parse(dataString);
 
-            string ipOrSocketId = (sendDic.ContainsKey(sid)) ? sid : ip;
+            lock(sendDic) {
 
-            if (sendDic.ContainsKey(ipOrSocketId)) {
+                int headerId = int.Parse(dataString);
 
-                if (sendDic[ipOrSocketId].ContainsKey(headerId)) {
+                string ipOrSocketId = (sendDic.ContainsKey(sid)) ? sid : ip;
 
-                    // Debug.Log("收到反馈码 1 包头 id " + headerId + "已被对方接收");
+                if (sendDic.ContainsKey(ipOrSocketId)) {
 
-                    Packet currentPacket = sendDic[ipOrSocketId][headerId];
+                    if (sendDic[ipOrSocketId].ContainsKey(headerId)) {
 
-                    currentPacket.packetHeaderRecvState = true;
+                        // Debug.Log("收到反馈码 1 包头 id " + headerId + "已被对方接收");
 
-                    EndPoint ep = (EndPoint)new IPEndPoint(IPAddress.Parse(ip), port);
+                        Packet currentPacket = sendDic[ipOrSocketId][headerId];
 
-                    // 开始全发小包
-                    for (int i = 0; i < currentPacket.miniPacketList.Count; i += 1) {
+                        currentPacket.packetHeaderRecvState = true;
 
-                        socket.SendTo(currentPacket.miniPacketList[i], 0, currentPacket.miniPacketList[i].Length, 0, ep);
+                        EndPoint ep = (EndPoint)new IPEndPoint(IPAddress.Parse(ip), port);
 
-                        // Debug.Log("正在发小包" + i);
+                        // 开始全发小包
+                        for (int i = 0; i < currentPacket.miniPacketList.Count; i += 1) {
+
+                            socket.SendTo(currentPacket.miniPacketList[i], 0, currentPacket.miniPacketList[i].Length, 0, ep);
+
+                            // Debug.Log("正在发小包" + i);
+                        }
                     }
-
-                } else {
-
-                    // Debug.Log("收到反馈码 1 包头 id : " + headerId + "，但该包头已处理过");
-
                 }
-
-            } else {
-
-                // Debug.LogAssertion("收到反馈码 1 包头 id : " + headerId + "，但这是一个奇怪的IP地址");
-
             }
         }
 
         // 2 收到小包 转 MiniPacket 类型 回复收到小包序号
         void jointPacket(string dataString, string ip, int port, string sid) {
 
-            // TODO 小包错乱问题
+            lock(recvDic) {
 
-            // 接收到的小包字符串转码成 MiniPacket
-            MiniPacket minipacket =  JsonUtility.FromJson<MiniPacket>(dataString);
+                // TODO 小包错乱问题
+                // 接收到的小包字符串转码成 MiniPacket
+                MiniPacket minipacket =  JsonConvert.DeserializeObject<MiniPacket>(dataString);
 
-            BasePacket currentBasePacket = getCurrentBasePacket(sid);
+                BasePacket currentBasePacket = getCurrentBasePacket(sid);
 
-            // 如果包存在，计算拼接
-            if (currentBasePacket != null) {
+                // 如果包存在，计算拼接
+                if (currentBasePacket != null) {
 
-                PacketHeader ph = currentBasePacket.packetHeader;
+                    // Debug.Log("收到" + currentBasePacket.packetHeader.n + "的小包" + minipacket.n);
 
-                int mid = minipacket.i;
+                    PacketHeader ph = currentBasePacket.packetHeader;
 
-                int declaredSize = ph.a[mid];
+                    int mid = minipacket.i;
 
-                int recvSize = minipacket.n.Length;
+                    int declaredSize = ph.a[mid];
 
-                if (declaredSize != recvSize) {
+                    int recvSize = minipacket.n.Length;
 
-                    Debug.LogWarning("收到小包的包头ID" + currentBasePacket.packetHeader.i);
+                    if (declaredSize != recvSize) {
 
-                    Debug.Log("尺寸不匹配（收到/声明）：" + recvSize + "/" + declaredSize);
+                        Debug.Log("请求补发 ：" + ph.n + "的小包" + mid);
 
-                    // TODO 请求补发小包序号
-                    responseState("5", mid, ip, port);
+                        // TODO 请求补发小包序号
+                        responseState("5", mid, ip, port);
 
-                    return;
+                        return;
 
-                }
-
-                // 确认小包正确后，发送小包序号
-                responseState("3", mid, ip, port);
-
-                // 如果未计算过该 小包
-                if (currentBasePacket.jointStr[mid] == null) {
-
-                    currentBasePacket.recvMiniCount += 1;
-
-                    currentBasePacket.recvMiniSize += minipacket.n.Length;
-
-                    // 在字符组加入该小包
-                    currentBasePacket.jointStr[mid] = minipacket.n;
+                    }
 
                     // 确认小包正确后，发送小包序号
                     responseState("3", mid, ip, port);
 
-                    Debug.Log("包头" + currentBasePacket.packetHeader.i +"小包 id ：" + mid + "小包内容" + minipacket.n);
+                    // 如果未计算过该 小包
+                    if (currentBasePacket.jointStr[mid] == null) {
 
-                }
+                        currentBasePacket.recvMiniCount += 1;
 
-                // 小包已完整接收
-                if (currentBasePacket.recvMiniSize >= currentBasePacket.packetHeader.getArraySize()) {
+                        currentBasePacket.recvMiniSize += minipacket.n.Length;
 
-                    if (currentBasePacket.fullStr.Length >= currentBasePacket.recvMiniSize) {
+                        // 在字符组加入该小包
+                        currentBasePacket.jointStr[mid] = minipacket.n;
 
-                        // 不用拼接，直接发齐全声明
-                        responseState("4", currentBasePacket.packetHeader.i, ip, port);
+                        // 确认小包正确后，发送小包序号
+                        responseState("3", mid, ip, port);
 
-                        Debug.Log("补发" + currentBasePacket.packetHeader.i + "齐全声明");
+                    }
 
-                    } else {
+                    // 小包已完整接收
+                    if (currentBasePacket.recvMiniSize >= currentBasePacket.packetHeader.getArraySize()) {
 
-                        // 收到所有小包，开始拼接，接完发齐全声明，并触发事件
-                        foreach(string s in currentBasePacket.jointStr) {
+                        if (currentBasePacket.fullStr.Length >= currentBasePacket.recvMiniSize) {
 
-                            currentBasePacket.fullStr += s;
+                            // 不用拼接，直接发齐全声明
+                            responseState("4", currentBasePacket.packetHeader.i, ip, port);
+
+                        } else {
+
+                            // 收到所有小包，开始拼接，接完发齐全声明，并触发事件
+                            foreach(string s in currentBasePacket.jointStr) {
+
+                                currentBasePacket.fullStr += s;
+
+                            }
+
+                            // 触发自定义事件
+                            invokeEvent<string>(currentBasePacket.packetHeader.n, currentBasePacket.fullStr);
+
+                            // Debug.LogWarning("触发事件" + currentBasePacket.packetHeader.n);
+
+                            // 触发完删除旧包头
+                            recvDic[sid].Remove(currentBasePacket.packetHeader.i);
+
+                            if (recvDic[sid].Count == 0) {
+
+                                recvDic.Remove(sid);
+
+                            }
+
+                            // 发送小包齐全声明
+                            responseState("4", currentBasePacket.packetHeader.i, ip, port);
 
                         }
-
-                        // 触发自定义事件
-                        invokeEvent<string, string>(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, sid);
-
-                        // 触发完删除旧包头
-                        recvDic[sid].Remove(currentBasePacket.packetHeader.i);
-
-                        if (recvDic[sid].Count == 0) {
-
-                            recvDic.Remove(sid);
-
-                        }
-
-                        // 发送小包齐全声明
-                        responseState("4", currentBasePacket.packetHeader.i, ip, port);
-
                     }
                 }
             }
@@ -731,72 +736,76 @@ namespace CuteUDPApp {
         // 3 收到小包确认 转 int 类型（对应的是 小包的 mid）
         void miniPacketRecieved(string dataString, string ip, int port, string sid) {
 
-            int mid = int.Parse(dataString);
+            lock(sendDic) {
 
-            string ipOrSocketId = (sendDic.ContainsKey(sid)) ? sid : ip;
+                int mid = int.Parse(dataString);
 
-            Packet currentPacket = getCurrentPacket(ipOrSocketId);
+                string ipOrSocketId = (sendDic.ContainsKey(sid)) ? sid : ip;
 
-            if (currentPacket != null) {
+                Packet currentPacket = getCurrentPacket(ipOrSocketId);
 
-                // Debug.Log("收到反馈码 3 小包 id 确认 : " + mid);
+                if (currentPacket != null) {
 
-                currentPacket.miniPacketCheckList[mid] = "1";
+                    // Debug.Log("收到反馈码 3 小包 id 确认 : " + mid);
 
-            } else {
+                    if (currentPacket.miniPacketCheckList.Length > 1) {
 
-                // Debug.Log("收到反馈码 3 小包 ：" + mid + "，但该包已不存在");
+                        currentPacket.miniPacketCheckList[mid] = "1";
 
+                    }
+                }
             }
         }
 
         // 4 收到小包齐全确认 转 int 类型（对应的是 headerId）
         void fullPacketRecieved(string dataString, string ip, int port, string sid) {
 
-            int headerId = int.Parse(dataString);
+            lock(sendDic) {
+                
+                int headerId = int.Parse(dataString);
 
-            string ipOrSocketId = (sendDic.ContainsKey(sid)) ? sid : ip;
-            
-            Packet existPacket = getCurrentPacket(ipOrSocketId);
+                string ipOrSocketId = (sendDic.ContainsKey(sid)) ? sid : ip;
+                
+                Packet existPacket = getCurrentPacket(ipOrSocketId);
 
-            if (existPacket != null) {
+                if (existPacket != null) {
 
-                Debug.Log("收到反馈码 4 包" + headerId + "已被完全收到 : " + headerId + "，耗时" + (nowTimeSample - existPacket.sendTimeSample));
+                    int t1 = nowTimeSample - existPacket.sendTimeSample;
+                    
+                    Debug.Log("收到反馈码 4 包" + existPacket.packetHeader.n + "已被完全收到。耗时" + t1.ToString());
 
-                existPacket.miniPacketListRecvState = true;
+                    existPacket.miniPacketListRecvState = true;
 
-                sendDic[ipOrSocketId].Remove(headerId);
+                    sendDic[ipOrSocketId].Remove(headerId);
 
-                if (sendDic[ipOrSocketId].Count == 0) {
+                    if (sendDic[ipOrSocketId].Count == 0) {
 
-                    sendDic.Remove(ipOrSocketId);
+                        sendDic.Remove(ipOrSocketId);
+
+                    }
 
                 }
-
-            } else {
-
-                Debug.Log("收到反馈码 4 包" + headerId + "已被完全收到并处理完成");
-
             }
         }
 
         // 5 收到错误小包重发请求 mid
         void requestWrongMini(string dataString, string ip, int port, string sid) {
 
-            int mid = int.Parse(dataString);
+            lock(sendDic) {
 
-            Packet currentPacket = (sendDic.ContainsKey(sid)) ? getCurrentPacket(sid) : getCurrentPacket(ip);
+                int mid = int.Parse(dataString);
 
-            EndPoint ep = (EndPoint)new IPEndPoint(IPAddress.Parse(ip), port);
+                Packet currentPacket = (sendDic.ContainsKey(sid)) ? getCurrentPacket(sid) : getCurrentPacket(ip);
 
-            if (currentPacket != null) {
-                
-                currentPacket.miniPacketCheckList[mid] = "";
+                EndPoint ep = (EndPoint)new IPEndPoint(IPAddress.Parse(ip), port);
 
-                socket.SendTo(currentPacket.miniPacketList[mid], 0, currentPacket.miniPacketList[mid].Length, 0, ep);
+                if (currentPacket != null) {
+                    
+                    socket.SendTo(currentPacket.miniPacketList[mid], 0, currentPacket.miniPacketList[mid].Length, 0, ep);
 
-                Debug.Log("收到反馈码 5，正在补发包头" + currentPacket.packetHeader.i + " 的小包:" + mid);
+                    Debug.Log("收到反馈码 5，正在补发包" + currentPacket.packetHeader.n + " 的小包:" + mid);
 
+                }
             }
         }
 
@@ -840,84 +849,105 @@ namespace CuteUDPApp {
             // AB试验线程锁
             lock(sendDic) {
 
-                if (ipOrSocketId == "" || ipOrSocketId == null) return null;
+                if (sendDic.ContainsKey(ipOrSocketId)) {
 
-                if (!sendDic.ContainsKey(ipOrSocketId)) return null;
+                    Dictionary<int, Packet> packetValueDic = sendDic[ipOrSocketId];
 
-                Dictionary<int, Packet> packetValueDic = sendDic[ipOrSocketId];
+                    if (packetValueDic != null && packetValueDic.Count > 0) {
 
-                if (packetValueDic != null || packetValueDic.Count > 0) {
-
-                    // 处理该 IP 对应的 包
-                    if (packetValueDic.Keys.Count > 0) {
-
+                        // 处理该 IP 对应的 包
                         int ik = packetValueDic.Keys.First();
 
-                        if (!packetValueDic.ContainsKey(ik)) return null;
+                        if (packetValueDic.ContainsKey(ik)) {
 
-                        Packet p = packetValueDic[ik];
+                            Packet p = packetValueDic[ik];
 
-                        if (p.packetHeaderRecvState == true) {
+                            if (p.packetHeaderRecvState == true) {
 
-                            if (p.miniPacketListRecvState == true) {
+                                if (p.miniPacketListRecvState == true) {
 
-                                sendDic[ipOrSocketId].Remove(ik);
+                                    sendDic[ipOrSocketId].Remove(ik);
 
-                                return getCurrentPacket(ipOrSocketId);
+                                    return getCurrentPacket(ipOrSocketId);
+
+                                } else {
+
+                                    return p;
+
+                                }
+
+                            } else {
+
+                                return p;
 
                             }
-                        }
 
-                        return p;
+                        } else {
+
+                            return null;
+
+                        }
 
                     } else {
 
                         return null;
-
                     }
 
                 } else {
 
                     return null;
+
                 }
             }
         }
 
         BasePacket getCurrentBasePacket(string ipOrSocketId) {
 
-            // AB试验线程锁
             lock(recvDic) {
 
-                if (ipOrSocketId == "" || ipOrSocketId == null) return null;
+                // AB试验线程锁
+                if (recvDic.ContainsKey(ipOrSocketId)) {
 
-                if (!recvDic.ContainsKey(ipOrSocketId)) return null;
+                    Dictionary<int, BasePacket> packetValueDic = recvDic[ipOrSocketId];
 
-                Dictionary<int, BasePacket> packetValueDic = recvDic[ipOrSocketId];
+                    if (packetValueDic != null && packetValueDic.Count > 0) {
 
-                if (packetValueDic == null) return null;
+                        // 处理该 IP 对应的 包
+                        int ik = packetValueDic.Keys.First();
 
-                // 如果该 IP 无待发数据，跳过
-                if (packetValueDic.Count <= 0) return null;
+                        if (packetValueDic.ContainsKey(ik)) {
 
-                if (packetValueDic.Keys.Count == 0) return null;
+                            BasePacket p = packetValueDic[ik];
 
-                // 处理该 IP 对应的 包
-                int ik = packetValueDic.Keys.First();
+                            if (p.fullStr.Length == p.packetHeader.getArraySize()) {
 
-                if (!packetValueDic.ContainsKey(ik)) return null;
+                                recvDic[ipOrSocketId].Remove(ik);
 
-                BasePacket p = packetValueDic[ik];
+                                return getCurrentBasePacket(ipOrSocketId);
 
-                if (p.fullStr.Length == p.packetHeader.getArraySize()) {
+                            } else {
 
-                    recvDic[ipOrSocketId].Remove(ik);
+                                return p;
 
-                    return getCurrentBasePacket(ipOrSocketId);
+                            }
 
-                }
+                        } else {
 
-                return packetValueDic[ik];
+                            return null;
 
+                        }
+
+                    } else {
+
+                        return null;
+
+                    } 
+
+                } else {
+
+                    return null;
+
+                } 
             }
         }
     }

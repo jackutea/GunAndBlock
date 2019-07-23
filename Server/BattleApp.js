@@ -43,29 +43,36 @@ class BattleApp extends event {
 
     }
 
-    // 初始化全局变量
-    initBattleGD(dataString, sid) {
-
-        BATTLE_GD.CreateGD();
-
-    }
-
     // 初始化进程监听事件
     initBattleClusterListener() {
 
-        this.on("error", (err) => {
+        this.on("error", (err) => { console.log("BattleApp Event Error:", err); })
 
-            console.log("BattleApp Event Error:", err);
-            
-        })
-
-        this.on("InitBattleGD", this.initBattleGD); // 初始化全局变量
+        this.on("InitBattleGD", (dataString, sid) => { BATTLE_GD.CreateGD(); }); // 初始化全局变量
 
         this.on("BattleLoadField", this.battleLoadField); // 匹配成功，载入战场
 
-        this.on("BattleMove", this.battleMove); // 玩家移动
+        this.on("RequestSidJson", this.requestSidJson); // 请求 sidJson 
 
-        this.on("CancelMove", this.cancelMove); // 玩家取消移动
+        this.on("Move", this.move); // 玩家移动
+
+        this.on("CancelMove", (dataString, sid) => { this.requestSidJson(dataString, sid, "CancelMove"); }); // 玩家取消移动
+
+        this.on("Block", (dataString, sid) => { this.requestSidJson(dataString, sid, "Block"); }); // 玩家格挡
+
+        this.on("CancelBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "CancelBlock"); }); // 玩家取消格挡
+
+        this.on("PerfectBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "PerfectBlock"); }); // 玩家完美格挡
+
+        this.on("CancelPerfectBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "CancelPerfectBlock"); }); // 玩家取消完美格挡
+
+        this.on("Shoot", this.shoot); // 玩家射击
+
+        this.on("PerfectBlockBullet", this.perfectBlockBullet); // 玩家完美格挡了子弹
+
+        this.on("BlockBullet", this.blockBullet); // 玩家普通格挡了子弹
+
+        this.on("BeAttacked", this.beAttacked); // 子弹直接命中
 
     }
 
@@ -116,9 +123,26 @@ class BattleApp extends event {
         })
     }
 
+    // 请求 sidJson
+    requestSidJson(dataString, sid, eventName) {
+
+        process.nextTick(() => {
+
+            let role = BATTLE_GD.ONLINE_ROLE[sid];
+
+            let fieldIndex = role.inFieldId;
+
+            let sidJson = BATTLE_GD.FIELD_JSON[fieldIndex].sidJson;
+
+            let sidArray = Object.keys(sidJson);
+
+            process.send({ eventName: eventName, dataString: {data: sid, sidArray: sidArray}, sid: sid});
+
+        })
+    }
+
     // 玩家移动
-    // 返回FieldInfo内的role
-    battleMove(dataString, sid) {
+    move(dataString, sid) {
 
         process.nextTick(() => {
 
@@ -140,17 +164,18 @@ class BattleApp extends event {
 
                 let sidArray = Object.keys(sidJson);
 
-                process.send({ eventName: "BattleMove", dataString : {moveInfo: moveInfo, sidArray: sidArray}, sid: sid });
+                process.send({ eventName: "Move", dataString : {data: JSON.stringify(moveInfo), sidArray: sidArray}, sid: sid });
 
             }
         })
     }
 
-    // 玩家取消移动
-    // 返回 roleArray
-    cancelMove(dataString, sid) {
+    // 子弹的处理方式
+    bulletEvent(dataString, sid, eventName) {
 
         process.nextTick(() => {
+
+            let bulletInfo = JSON.parse(dataString);
 
             let role = BATTLE_GD.ONLINE_ROLE[sid];
 
@@ -158,12 +183,51 @@ class BattleApp extends event {
 
             let sidJson = BATTLE_GD.FIELD_JSON[fieldIndex].sidJson;
 
-            let roleArray = Object.keys(sidJson);
+            bulletInfo.sid = sid;
 
-            process.send({ eventName: "CancelMove", dataString: JSON.stringify(roleArray), sid: sid});
+            if (eventName === "PerfectBlockBullet" || eventName === "Shoot") {
+
+                let bidJson = BATTLE_GD.FIELD_JSON[fieldIndex].bidJson;
+
+                bidJson[bulletInfo.bid] = bulletInfo;
+
+            } else if (eventName === "BlockBullet") {
+
+                sidJson[sid].blockLife -= bulletInfo.dmg;
+
+                delete BATTLE_GD.FIELD_JSON[fieldIndex].bidJson[bulletInfo.bid];
+
+            } else if (eventName === "BeAttacked") {
+
+                sidJson[sid].life -= bulletInfo.dmg;
+
+                delete BATTLE_GD.FIELD_JSON[fieldIndex].bidJson[bulletInfo.bid];
+
+            }
+
+            let sidArray = Object.keys(sidJson);
+
+            process.send({ eventName: eventName, dataString: {data: JSON.stringify(bulletInfo), sidArray: sidArray} , sid: sid});
 
         })
     }
+
+    // 玩家射击
+    // dataString = class BulletInfo
+    shoot(dataString, sid) { this.bulletEvent(dataString, sid, "Shoot"); }
+
+    // 玩家完美格挡了子弹
+    // dataString = BulletInfo
+    perfectBlockBullet(dataString, sid) { this.bulletEvent(dataString, sid, "PerfectBlockBullet"); }
+
+    // 玩家普通格挡了子弹
+    // dataString = BulletInfo
+    blockBullet(dataString, sid) { this.bulletEvent(dataString, sid, "BlockBullet"); }
+
+    // 被直接击中
+    // dataString = BulletInfo
+    beAttacked(dataString, sid) { this.bulletEvent(dataString, sid, "BeAttacked"); }
+
 }
 
 module.exports = BattleApp;

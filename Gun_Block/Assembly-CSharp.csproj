@@ -65,6 +65,7 @@
      <Compile Include="Assets\Script\CuteUDPManager.cs" />
      <Compile Include="Assets\Script\Datas\PlayerDataScript.cs" />
      <Compile Include="Assets\Script\Datas\ServerDataScript.cs" />
+     <Compile Include="Assets\Script\Factory\BulletInfo.cs" />
      <Compile Include="Assets\Script\Factory\CreateRoleSendInfo.cs" />
      <Compile Include="Assets\Script\Factory\FieldInfo.cs" />
      <Compile Include="Assets\Script\Factory\LoginRecvInfo.cs" />

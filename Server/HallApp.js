@@ -77,7 +77,7 @@ class HallApp extends event {
 
         this.on("ShowServer", this.showServer); // 显示服务器列表
 
-        this.on("ShowRole", this.showRole); // 显示角色列表
+        this.on("ShowRoles", this.showRoles); // 显示角色列表
 
         this.on("CreateRole", this.createRole); // 创建角色
 
@@ -206,7 +206,7 @@ class HallApp extends event {
     }
 
     // 显示角色
-    showRole(dataString, sid) {
+    showRoles(dataString, sid) {
 
         process.nextTick(() => {
 
@@ -234,7 +234,7 @@ class HallApp extends event {
 
                 }
 
-                process.send({ eventName: "ShowRole", dataString: roleListSendInfo, sid: sid});
+                process.send({ eventName: "ShowRoles", dataString: JSON.stringify(roleListSendInfo), sid: sid});
 
             });
         })
@@ -267,7 +267,7 @@ class HallApp extends event {
 
                 if (result) {
 
-                    process.send({ eventName: "CreateRole", dataString: "", sid: sid});
+                    process.send({ eventName: "CreateRoleFail", dataString: "", sid: sid});
 
                 } else {
 

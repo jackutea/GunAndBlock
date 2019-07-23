@@ -111,10 +111,8 @@ public class ChooseServerScript : MonoBehaviour {
 
             } else {
 
-                CuteUDPManager.cuteUDP.emitServer("ShowRole", ServerDataScript.choosenServerId.ToString());
+                CuteUDPManager.cuteUDP.emitServer("ShowRoles", ServerDataScript.choosenServerId.ToString());
 
-                // SceneManager.LoadScene("Home");
-                
             }
         });
         

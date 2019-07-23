@@ -27,7 +27,7 @@ class CuteUDP extends event {
         // CuteUDP 配置
         this.abortTimeMs = 5000; // 总超时弃发(默认5秒)
 
-        this.perLength = 128;
+        this.perLength = 256;
 
         Packet.perLength = this.perLength;
         
@@ -283,12 +283,19 @@ class CuteUDP extends event {
     // 回传消息
     emitBackTo(eventName, objStr, sid) {
 
-        let ip = this.socketIdToIpInfo[sid].ip;
+        try {
 
-        let port = this.socketIdToIpInfo[sid].port;
+            let ip = this.socketIdToIpInfo[sid].ip;
 
-        this.emitTo(eventName, objStr, ip, port, sid);
+            let port = this.socketIdToIpInfo[sid].port;
 
+            this.emitTo(eventName, objStr, ip, port, sid);
+
+        } catch (err) {
+
+            if (err) throw err;
+
+        }
     }
 
     // 向服务端发消息
@@ -463,6 +470,8 @@ class CuteUDP extends event {
                 if (recvSize != declareSize) {
 
                     // TODO 请求补发
+                    console.log("请求补发", currentBasePacket.packetHeader.n, "的小包", mid);
+
                     this.responseState("5", mid, ipStr, ipPort);
 
                     return;
@@ -593,18 +602,13 @@ class CuteUDP extends event {
 
             if (currentPacket) {
 
-                try {
+                if (currentPacket.miniPacketList[mid]) {
 
                     this.socket.send(currentPacket.miniPacketList[mid], currentPacket.toPort, currentPacket.toIp, (err, byte) => {
 
-                        console.log("包头", currentPacket.packetHeader.i, "因错误补发送小包id", mid);
-
+                        console.log("事件", currentPacket.packetHeader.n, "因错误补发送小包id", mid);
+    
                     });
-
-                } catch (err) {
-
-                    if (err) throw err;
-
                 }
             }
         })

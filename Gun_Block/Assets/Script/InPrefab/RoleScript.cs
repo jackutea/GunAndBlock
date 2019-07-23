@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 public class RoleScript : MonoBehaviour {
 
@@ -10,7 +12,6 @@ public class RoleScript : MonoBehaviour {
 
     public GameObject roleInstance;
     public SpriteRenderer roleSpriteRenderer;
-    public GameObject bulletInstance;
     public RoleState roleState;
     public Collider roleCollider;
     public Animator roleAni;
@@ -36,7 +37,7 @@ public class RoleScript : MonoBehaviour {
 
     void Start() {
 
-        socketSendGap = 0;
+        socketSendGap = Time.deltaTime * 1.5f;
 
         // registerKeyAct();
 
@@ -52,41 +53,38 @@ public class RoleScript : MonoBehaviour {
 
         aniCheck(); // 动画更替
 
+        timeReduce();
+
         if (!isMe) return;
 
         if (!roleState.isDead) {
 
-            inputKeyboardCheck();
-        
-            inputMouseCheck();
+            inputKeyCheck();
 
         }
     }
 
-    void FixedUpdate() {
+    // 按键监测 Update
+    void inputKeyCheck() {
 
-        socketSendGap += Time.deltaTime;
+        // 开始格挡
+        if (Input.GetKeyDown(KeyCode.Mouse1)) {
 
-        if (roleState.shootGap > 0)
+            block(KeyCode.Mouse1);
 
-            roleState.shootGap -= Time.fixedDeltaTime;
+        // 发射一次
+        } else if (Input.GetKeyDown(KeyCode.Mouse0)) {
 
-        if (roleState.blockGap > 0)
-
-            roleState.blockGap -= Time.fixedDeltaTime;
-
-        if (roleState.perfectBlockGap > 0)
-
-            roleState.perfectBlockGap -= Time.fixedDeltaTime;
+            shoot();
         
-        else
+        } 
 
-            roleState.isPerfectBlocking = false;
+        // 取消格挡
+        if (Input.GetKeyUp(KeyCode.Mouse1)) {
 
-    }
+            block(KeyCode.Mouse1);
 
-    // 键盘按键监测 Update
-    void inputKeyboardCheck() {
+        }
 
         if (Input.GetKey(KeyCode.W)) {
 
@@ -168,48 +166,47 @@ public class RoleScript : MonoBehaviour {
             
         }
 
-        if (Input.GetKeyUp(KeyCode.W) || Input.GetKeyUp(KeyCode.S) || Input.GetKeyUp(KeyCode.A) || Input.GetKeyUp(KeyCode.D)) {
+        if (!Input.GetKey(KeyCode.W) && !Input.GetKey(KeyCode.S) && !Input.GetKey(KeyCode.A) && !Input.GetKey(KeyCode.D)) {
 
-            roleState.isMoving = false;
+            if (roleState.isMoving) {
 
-            CuteUDPManager.cuteUDP.emitServer("CancelMove", "");
+                roleState.isMoving = false;
 
+                CuteUDPManager.cuteUDP.emitServer("CancelMove", "");
+
+            }
         }
     }
 
-    // 鼠标按键监测
-    void inputMouseCheck() {
+    void timeReduce() {
 
-        // 开始格挡
-        if (Input.GetMouseButton(1)) {
+        socketSendGap -= Time.deltaTime;
 
-            block(KeyCode.Mouse1);
+        if (roleState.shootGap > 0) {
 
-            // Action<KeyCode> act = keyActDic[KeyCode.Mouse1];
-            
-            // act.Invoke(KeyCode.Mouse1);
+            roleState.shootGap -= Time.deltaTime;
 
         }
 
-        // 发射一次
-        if (Input.GetMouseButtonUp(0)) {
+        if (roleState.blockGap > 0) {
 
-            shoot(KeyCode.Mouse0);
+            roleState.blockGap -= Time.deltaTime;
 
-            // Action<KeyCode> act = keyActDic[KeyCode.Mouse0];
-            
-            // act.Invoke(KeyCode.Mouse0);
+        }
 
-        
-        // 取消格档
-        } else if (Input.GetMouseButtonUp(1)) {
+        if (roleState.perfectBlockLast > 0) {
 
-            block(KeyCode.Mouse1);
+            roleState.perfectBlockLast -= Time.deltaTime;
 
-            // Action<KeyCode> act = keyActDic[KeyCode.Mouse1];
-            
-            // act.Invoke(KeyCode.Mouse1);
+        } else {
 
+            if (roleState.isPerfectBlocking == true) {
+
+                CuteUDPManager.cuteUDP.emitServer("CancelPerfectBlock", "");
+
+            }
+
+            roleState.isPerfectBlocking = false;
         }
     }
 
@@ -317,7 +314,7 @@ public class RoleScript : MonoBehaviour {
 
             if (roleState.isLeftAlly == false) {
 
-                if (po.x - colWidth >= 0) {
+                if (po.x + colWidth >= 0) {
                 
                     roleInstance.transform.Translate(Vector2.left * roleState.moveSpeed * Time.deltaTime);
 
@@ -325,7 +322,7 @@ public class RoleScript : MonoBehaviour {
 
             } else {
 
-                if (po.x - colWidth >= - xWall) {
+                if (po.x + colWidth >= - xWall) {
                 
                     roleInstance.transform.Translate(Vector2.left * roleState.moveSpeed * Time.deltaTime);
 
@@ -355,17 +352,13 @@ public class RoleScript : MonoBehaviour {
 
         Vector2 currentPo = roleInstance.transform.localPosition;
 
-        int pox = (int)Mathf.Floor(currentPo.x * 1000) / 1000;
+        int pox = (int)currentPo.x;
 
-        Debug.Log(pox);
-
-        int poy = (int)Mathf.Floor(currentPo.y * 1000) / 1000;
+        int poy = (int)currentPo.y;
 
         int[] intPo = {pox, poy};
 
-        Debug.Log(intPo[0]);
-
-        if (socketSendGap > Time.deltaTime * 1.5f) {
+        if (socketSendGap <= 0) {
 
             MoveInfo moveInfo = new MoveInfo(intPo);
 
@@ -375,13 +368,13 @@ public class RoleScript : MonoBehaviour {
 
             Debug.LogWarning(moveInfoString);
 
-            CuteUDPManager.cuteUDP.emitServer("BattleMove", moveInfoString);
+            CuteUDPManager.cuteUDP.emitServer("Move", moveInfoString);
 
         }
     }
 
     // 射击
-    void shoot(KeyCode key) {
+    void shoot() {
 
         if (roleState.shootGap > 0) {
 
@@ -393,29 +386,67 @@ public class RoleScript : MonoBehaviour {
 
         if (!roleState.isBlocking) {
 
-            // Debug.Log("Shoot");
+            shootBullet();
 
-            bulletInstance = GameObject.Instantiate(PrefabCollection.instance.bulletPrefab, transform.position, transform.rotation, battlePanel.transform);
+            roleState.shootGap = roleState.shootGapOrigin;
 
-            BulletScript bulletScript = bulletInstance.GetComponent<BulletScript>();
+        }
+    }
 
-            bulletScript.shootSpeed = roleState.shootSpeed;
+    // 生成子弹
+    public void shootBullet(BulletInfo bulletInfo = null) {
 
-            bulletScript.isShootToRight = roleState.isLeftAlly;
+        GameObject bulletInstance = GameObject.Instantiate(PrefabCollection.instance.bulletPrefab, transform.position, transform.rotation, battlePanel.transform);
 
-            if (bulletScript.isShootToRight) {
+        BulletScript bulletScript = bulletInstance.GetComponent<BulletScript>();
 
-                bulletScript.gameObject.tag = "LeftAllyBullet";
+        if (bulletInfo == null) {
+
+            bulletScript.bulletInfo = new BulletInfo(PlayerDataScript.sid);
+
+            bulletInstance.name = bulletScript.bulletInfo.bid;
+
+            bulletScript.bulletInfo.shootSpeed = roleState.shootSpeed;
+
+            bulletScript.bulletInfo.dmg = roleState.damage;
+
+            if (roleState.isLeftAlly) {
+
+                bulletScript.bulletInfo.direct = 1;
+
+                bulletInstance.tag = "LeftAllyBullet";
 
             } else {
 
-                bulletScript.direct = -1;
+                bulletScript.bulletInfo.direct = -1;
 
-                bulletScript.gameObject.tag = "RightAllyBullet";
+                bulletInstance.tag = "RightAllyBullet";
 
             }
 
-            roleState.shootGap = roleState.shootGapOrigin;
+            Debug.Log("我发射子弹，速度" + bulletScript.bulletInfo.shootSpeed);
+
+            string dataString = JsonConvert.SerializeObject(bulletScript.bulletInfo);
+
+            CuteUDPManager.cuteUDP.emitServer("Shoot", dataString);
+
+        } else {
+
+            bulletScript.bulletInfo = bulletInfo;
+
+            bulletInstance.name = bulletScript.bulletInfo.bid;
+
+            if (bulletInfo.direct == 1) {
+
+                bulletInstance.tag = "LeftAllyBullet";
+
+            } else {
+
+                bulletInstance.tag = "RightAllyBullet";
+
+            }
+
+            Debug.Log("他人发射子弹，速度:" + bulletScript.bulletInfo.shootSpeed);
 
         }
     }
@@ -423,38 +454,41 @@ public class RoleScript : MonoBehaviour {
     // 格挡
     void block(KeyCode key) {
 
-        if (roleState.blockGap > 0) {
+        if (roleState.blockGap <= 0) {
 
-            // Debug.Log("blockGap : " + roleState.blockGap);
+            if (Input.GetKeyDown(key)) {
 
-            return;
+                if (roleState.isBlocking == false) {
 
-        }
+                    if (roleState.perfectBlockLast <= 0) {
 
-        if (Input.GetKeyDown(key)) {
+                        roleState.isPerfectBlocking = true;
 
-            if (roleState.perfectBlockGap <= 0)
+                        roleState.perfectBlockLast = roleState.perfectBlockLastOrigin;
 
-                roleState.isPerfectBlocking = true;
+                        CuteUDPManager.cuteUDP.emitServer("PerfectBlock", "");
 
-                roleState.perfectBlockGap = roleState.perfectBlockGapOrigin;
+                    }
 
-                Debug.Log("触发完美格档");
-        }
+                    roleState.isBlocking = true;
 
-        if (Input.GetKey(key)) {
+                    CuteUDPManager.cuteUDP.emitServer("Block", "");
 
-            // Debug.Log("正在格档");
+                }
+            }
 
-            roleState.isBlocking = true;
+            if (Input.GetKeyUp(key)) {
 
-        } else {
+                if (roleState.isBlocking) {
 
-            // Debug.Log("取消格档");
+                    roleState.isBlocking = false;
 
-            roleState.isBlocking = false;
+                    roleState.blockGap = roleState.blockGapOrigin;
 
-            roleState.blockGap = roleState.blockGapOrigin;
+                    CuteUDPManager.cuteUDP.emitServer("CancelBlock", "");
+
+                }
+            }
         }
     }
 
@@ -464,6 +498,8 @@ public class RoleScript : MonoBehaviour {
         roleState.isDead = true;
 
         roleSpriteRenderer.sortingOrder = 1;
+
+        // TODO
 
     }
 
@@ -475,78 +511,71 @@ public class RoleScript : MonoBehaviour {
         // 我，是左边，碰到了右边来的子弹
         if (col.tag == "RightAllyBullet" && roleState.isLeftAlly && isMe) {
 
-            if (col.tag != bs.gameObject.tag) {
+            Debug.Log("碰到了右边来的子弹");
 
-                if (roleState.isLeftAlly) {
-
-                    if (roleState.isPerfectBlocking) {
-
-                        Debug.Log(bs.gameObject.tag + "被" + col.gameObject + "完美格挡");
-
-                        bs.direct *= -1;
-
-                        bs.shootSpeed *= 1.1f;
-
-                        bs.gameObject.tag = (col.tag == "LeftAllyBullet") ? "RightAllyBullet" : "LeftAllyBullet";
-
-                    } else if (roleState.isBlocking && !roleState.isPerfectBlocking) {
-
-                        Debug.Log(bs.gameObject.tag + "被" + col.gameObject + "格挡");
-
-                        roleState.blockLife -= 1;
-
-                        Destroy(col.gameObject);
-
-                    } else if (!roleState.isBlocking) {
-
-                        Debug.Log(bs.gameObject.tag + "射中了" + col.gameObject);
-
-                        roleState.life -= 1;
-
-                        if (roleState.life <= 0) dead(); // awsl
-
-                        Destroy(col.gameObject);
-                    }
-                }
-            }
+            beAttacked(bs, col);
 
         // 我，是右边，碰到了左边来的子弹
-        } else if (col.tag == "LeftAllyBullet" && roleState.isLeftAlly && isMe) {
+        } else if (col.tag == "LeftAllyBullet" && !roleState.isLeftAlly && isMe) {
 
-            if (col.tag != bs.gameObject.tag) {
+            Debug.Log("碰到了左边来的子弹");
 
-                if (!roleState.isLeftAlly) {
+            beAttacked(bs, col);
+            
+        }
+    }
 
-                    if (roleState.isPerfectBlocking) {
+    // 被子弹射中 子弹id 为 bs.bid
+    void beAttacked(BulletScript bs, Collider col) {
 
-                        Debug.Log(bs.gameObject.tag + "被" + col.gameObject + "完美格挡");
+        if (roleState.isPerfectBlocking) {
 
-                        bs.direct *= -1;
+            Debug.Log("完美格挡了" + col.gameObject);
 
-                        bs.shootSpeed *= 1.1f;
+            bs.bulletInfo.bePerfectBlock();
 
-                        bs.gameObject.tag = (col.tag == "LeftAllyBullet") ? "RightAllyBullet" : "LeftAllyBullet";
+            bs.gameObject.tag = (col.tag == "LeftAllyBullet") ? "RightAllyBullet" : "LeftAllyBullet";
 
-                    } else if (roleState.isBlocking && !roleState.isPerfectBlocking) {
+            string dataString = JsonConvert.SerializeObject(bs.bulletInfo);
 
-                        Debug.Log(bs.gameObject.tag + "被" + col.gameObject + "格挡");
+            CuteUDPManager.cuteUDP.emitServer("PerfectBlockBullet", dataString);
 
-                        roleState.blockLife -= 1;
+        } else if (roleState.isBlocking && !roleState.isPerfectBlocking) {
 
-                        Destroy(col.gameObject);
+            Debug.Log("格挡了" + col.gameObject);
 
-                    } else if (!roleState.isBlocking) {
+            roleState.blockLife -= bs.bulletInfo.dmg;
 
-                        Debug.Log(bs.gameObject.tag + "射中了" + col.gameObject);
+            if (roleState.blockLife <= 0) {
 
-                        roleState.life -= 1;
+                roleState.life -= bs.bulletInfo.dmg;
 
-                        if (roleState.life <= 0) dead(); // awsl
+                if (roleState.life <= 0) dead(); // awsl
 
-                        Destroy(col.gameObject);
-                    }
-                }
             }
+
+            Destroy(col.gameObject);
+
+            string dataString = JsonConvert.SerializeObject(bs.bulletInfo);
+
+            CuteUDPManager.cuteUDP.emitServer("BlockBullet", dataString);
+
+        } else if (!roleState.isBlocking) {
+
+            Debug.Log("被" + col.gameObject + "射中了");
+
+            roleState.life -= bs.bulletInfo.dmg;
+
+            if (roleState.life <= 0) dead(); // awsl
+
+            Debug.Log(roleState.roleName + "（我）的剩余生命值" + roleState.life);
+
+            Destroy(col.gameObject);
+
+            string dataString = JsonConvert.SerializeObject(bs.bulletInfo);
+
+            CuteUDPManager.cuteUDP.emitServer("BeAttacked", dataString);
+
         }
     }
 }

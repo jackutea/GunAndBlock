@@ -15,9 +15,8 @@ public class CuteUDPManager : MonoBehaviour {
     public int serverBattlePort;
     public int currentPort;
     public int localPort;
-    public volatile static Queue<Action<string, string>> actionQueue = new Queue<Action<string, string>>();
+    public volatile static Queue<Action<string>> actionQueue = new Queue<Action<string>>();
     public volatile static Queue<string> actionParam1 = new Queue<string>();
-    public volatile static Queue<string> actionParam2 = new Queue<string>();
 
     void Awake() {
 
@@ -39,6 +38,8 @@ public class CuteUDPManager : MonoBehaviour {
 
         cuteUDP = new CuteUDP(serverIp, currentPort, localPort);
 
+        PlayerDataScript.sid = CuteUDP.socketId;
+
         initPrivateVoid();
     }
 
@@ -52,13 +53,11 @@ public class CuteUDPManager : MonoBehaviour {
 
         if (actionQueue.Count > 0) {
 
-            Action<string, string> act = actionQueue.Dequeue();
+            Action<string> act = actionQueue.Dequeue();
 
             string dataString = actionParam1.Dequeue();
 
-            string sid = actionParam2.Dequeue();
-
-            act.Invoke(dataString, sid);
+            act.Invoke(dataString);
 
         }
     }
@@ -85,99 +84,154 @@ public class CuteUDPManager : MonoBehaviour {
 
         // 用Queue队列解决了Unity子线程无法调用主线程UI的方法
         // 服务器回传 登录
-        cuteUDP.on<string, string>("LoginRecv", (string dataString, string sid) => {
+        cuteUDP.on<string>("Login", (string dataString) => {
 
-            addQueue(CuteUDPEvent.onLoginRecv, dataString, sid);
-
+            addQueue(CuteUDPEvent.onLogin, dataString);
         
         });
 
         // 显示服务器
-        cuteUDP.on<string, string>("ShowServerRecv", (string dataString, string sid) => {
+        cuteUDP.on<string>("ShowServer", (string dataString) => {
 
-            addQueue(CuteUDPEvent.onShowServerRecv, dataString, sid);
+            addQueue(CuteUDPEvent.onShowServer, dataString);
             
         });
 
         // 显示自有角色
-        cuteUDP.on<string, string>("ShowRoleRecv", (string dataString, string sid) => {
+        cuteUDP.on<string>("ShowRoles", (string dataString) => {
 
-            addQueue(CuteUDPEvent.onShowRoleRecv, dataString, sid);
+            Debug.Log("收到showroles");
+
+            addQueue(CuteUDPEvent.onShowRoles, dataString);
 
         });
 
         // 创建角色成功
-        cuteUDP.on<string, string>("CreateRoleRecv", (string dataString, string sid) => {
+        cuteUDP.on<string>("CreateRole", (string dataString) => {
 
-            addQueue(CuteUDPEvent.onCreateRoleRecv, dataString, sid);
+            addQueue(CuteUDPEvent.onCreateRole, dataString);
 
         });
 
         // 创建角色失败
-        cuteUDP.on<string, string>("CreateRoleFailRecv", (string dataString, string sid) => {
+        cuteUDP.on<string>("CreateRoleFail", (string dataString) => {
 
-            addQueue(CuteUDPEvent.onCreateRoleFailRecv, dataString, sid);
+            addQueue(CuteUDPEvent.onCreateRoleFail, dataString);
 
         });
 
         // 删除角色
-        cuteUDP.on<string, string>("DeleteRoleRecv", (string dataString, string sid) => {
+        cuteUDP.on<string>("DeleteRole", (string dataString) => {
 
-            addQueue(CuteUDPEvent.onDeleteRoleRecv, dataString, sid);
+            addQueue(CuteUDPEvent.onDeleteRole, dataString);
 
         });
 
         // 进入游戏
-        cuteUDP.on<string, string>("EnterGameRecv", (string dataString, string sid) => {
+        cuteUDP.on<string>("EnterGame", (string dataString) => {
 
-            addQueue(CuteUDPEvent.onEnterGameRecv, dataString, sid);
+            addQueue(CuteUDPEvent.onEnterGame, dataString);
 
         });
 
         // 匹配等待
-        cuteUDP.on<string, string>("CompareWaitRecv", (string dataString, string sid) => {
+        cuteUDP.on<string>("CompareWait", (string dataString) => {
 
-            addQueue(CuteUDPEvent.onCompareWaitRecv, dataString, sid);
+            addQueue(CuteUDPEvent.onCompareWait, dataString);
 
         });
 
         // 匹配成功
-        cuteUDP.on<string, string>("CompareSuccessRecv", (string dataString, string sid) => {
+        cuteUDP.on<string>("CompareSuccess", (string dataString) => {
 
-            addQueue(CuteUDPEvent.onCompareSuccessRecv, dataString, sid);
+            addQueue(CuteUDPEvent.onCompareSuccess, dataString);
 
         });
 
         // 显示自定义房间
-        cuteUDP.on<string, string>("ShowRoomRecv", (string dataString, string sid) => {
+        cuteUDP.on<string>("ShowRoom", (string dataString) => {
 
-            addQueue(CuteUDPEvent.onShowRoomRecv, dataString, sid);
+            addQueue(CuteUDPEvent.onShowRoom, dataString);
 
         });
 
         // 其他玩家移动
-        cuteUDP.on<string, string>("BattleMoveRecv", (string dataString, string sid) => {
+        cuteUDP.on<string>("Move", (string dataString) => {
 
-            addQueue(CuteUDPEvent.onBattleMoveRecv, dataString, sid);
+            addQueue(CuteUDPEvent.onMove, dataString);
 
         });
 
         // 其他玩家取消移动
-        cuteUDP.on<string, string>("CancelMoveRecv", (string dataString, string sid) => {
+        cuteUDP.on<string>("CancelMove", (string dataString) => {
 
-            addQueue(CuteUDPEvent.onCancelMoveRecv, dataString, sid);
+            addQueue(CuteUDPEvent.onCancelMove, dataString);
+
+        });
+
+        // 其他玩家格挡
+        cuteUDP.on<string>("Block", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onBlock, dataString);
+
+        });
+
+        // 其他玩家取消格挡
+        cuteUDP.on<string>("CancelBlock", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onCancelBlock, dataString);
+
+        });
+
+        // 其他玩家完美格挡
+        cuteUDP.on<string>("PerfectBlock", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onPerfectBlock, dataString);
+
+        });
+
+        // 其他玩家取消完美格挡
+        cuteUDP.on<string>("CancelPerfectBlock", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onCancelPerfectBlock, dataString);
+
+        });
+
+        // 其他玩家射击
+        cuteUDP.on<string>("Shoot", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onShoot, dataString);
+
+        });
+
+        // 其他玩家完美格挡了子弹
+        cuteUDP.on<string>("PerfectBlockBullet", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onPerfectBlockBullet, dataString);
+
+        });
+
+        // 其他玩家普通格挡了子弹
+        cuteUDP.on<string>("BlockBullet", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onBlockBullet, dataString);
+
+        });
+
+        // 其他玩家被子弹直接击中
+        cuteUDP.on<string>("BeAttacked", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onBeAttacked, dataString);
 
         });
 
     }
 
-    void addQueue(Action<string, string> act, string dataString, string sid) {
+    void addQueue(Action<string> act, string dataString) {
 
         actionQueue.Enqueue(act);
             
         actionParam1.Enqueue(dataString);
-        
-        actionParam2.Enqueue(sid);
 
     }
 

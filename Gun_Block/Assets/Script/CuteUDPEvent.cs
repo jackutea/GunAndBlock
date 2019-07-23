@@ -13,7 +13,7 @@ class CuteUDPEvent : MonoBehaviour {
     
     // 接收登录信息 dataString : LoginInfo {stateCode : stateCode, msg : msg }
     // 0 成功 1密码错 2用户名错 3其他
-    public static void onLoginRecv(string dataString, string sid) {
+    public static void onLogin(string dataString) {
 
         LoginRecvInfo loginRecvInfo = JsonUtility.FromJson<LoginRecvInfo>(dataString);
 
@@ -29,7 +29,7 @@ class CuteUDPEvent : MonoBehaviour {
     }
 
     // 接收服务器回传
-    public static void onShowServerRecv(string dataString, string sid) {
+    public static void onShowServer(string dataString) {
 
         ServerRecvInfo serverRecvInfo = JsonUtility.FromJson<ServerRecvInfo>(dataString);
 
@@ -43,15 +43,13 @@ class CuteUDPEvent : MonoBehaviour {
 
         } else {
 
-            SceneManager.LoadScene("chooseServer");
+            SceneManager.LoadScene("ChooseServer");
 
         }
     }
 
     // 接收角色回传
-    public static void onShowRoleRecv(string dataString, string sid) {
-
-        Debug.Log(dataString);
+    public static void onShowRoles(string dataString) {
 
         RoleListRecvInfo roleListInfo = JsonConvert.DeserializeObject<RoleListRecvInfo>(dataString);
 
@@ -70,7 +68,7 @@ class CuteUDPEvent : MonoBehaviour {
     }
 
     // 删除角色回传
-    public static void onDeleteRoleRecv(string dataString, string sid) {
+    public static void onDeleteRole(string dataString) {
 
         Debug.Log("删除角色回传");
 
@@ -83,7 +81,7 @@ class CuteUDPEvent : MonoBehaviour {
     }
 
     // 接收创建角色成功回传
-    public static void onCreateRoleRecv(string dataString,string sid) {
+    public static void onCreateRole(string dataString) {
 
         RoleState oneRole = JsonUtility.FromJson<RoleState>(dataString);
 
@@ -94,14 +92,14 @@ class CuteUDPEvent : MonoBehaviour {
     }
 
     // 创建角色失败回传
-    public static void onCreateRoleFailRecv(string dataString, string sid) {
+    public static void onCreateRoleFail(string dataString) {
 
         showAlertWindow("角色名已存在");
 
     }
 
     // 进入游戏回传
-    public static void onEnterGameRecv(string dataString, string sid) {
+    public static void onEnterGame(string dataString) {
 
         // Debug.Log("进入HOME");
 
@@ -110,7 +108,7 @@ class CuteUDPEvent : MonoBehaviour {
     }
 
     // 等待匹配回传
-    public static void onCompareWaitRecv(string dataString, string sid) {
+    public static void onCompareWait(string dataString) {
 
         int modeCode = int.Parse(dataString);
 
@@ -121,14 +119,14 @@ class CuteUDPEvent : MonoBehaviour {
     }
 
     // 取消匹配回传
-    public static void onCompareCancelRecv(string dataString, string sid) {
+    public static void onCompareCancel(string dataString) {
 
         PlayerDataScript.ROLE_STATE.inComparingMode = -1;
 
     }
 
     // 匹配成功回传
-    public static void onCompareSuccessRecv(string dataString, string sid) {
+    public static void onCompareSuccess(string dataString) {
 
         // dataString = class FieldInfo
         Debug.LogWarning("匹配成功，回传战场数据 :" + dataString);
@@ -141,13 +139,13 @@ class CuteUDPEvent : MonoBehaviour {
     }
 
     // 接收服务器房间信息回传
-    public static void onShowRoomRecv(string dataString, string sid) {
+    public static void onShowRoom(string dataString) {
 
 
     }
 
     // 其他玩家移动
-    public static void onBattleMoveRecv(string dataString, string sid) {
+    public static void onMove(string dataString) {
 
         MoveInfo moveInfo = JsonUtility.FromJson<MoveInfo>(dataString);
 
@@ -155,21 +153,117 @@ class CuteUDPEvent : MonoBehaviour {
 
         PlayerDataScript.FIELD_INFO.sidJson[targetSid].vecArray = moveInfo.v;
 
-        FieldScript.BattleMove(targetSid, moveInfo.v);
+        FieldScript.Move(targetSid, moveInfo.v);
         
     }
 
     // 其他玩家取消移动
     // dataString = 取消移动的玩家 sid 
-    public static void onCancelMoveRecv(string dataString, string sid) {
+    public static void onCancelMove(string dataString) {
 
         string targetSid = dataString;
-
-        Debug.Log("收到" + targetSid + "取消移动的请求");
 
         PlayerDataScript.FIELD_INFO.sidJson[targetSid].isMoving = false;
 
         FieldScript.CancelMove(targetSid);
+    }
+
+    // 其他玩家格挡
+    public static void onBlock(string dataString) {
+
+        string targetSid = dataString;
+
+        FieldScript.Block(targetSid);
+
+    }
+
+    // 其他玩家取消格挡
+    public static void onCancelBlock(string dataString) {
+
+        string targetSid = dataString;
+
+        FieldScript.CancelBlock(targetSid);
+
+    }
+
+    // 其他玩家完美格挡
+    public static void onPerfectBlock(string dataString) {
+
+        string targetSid = dataString;
+
+        FieldScript.PerfectBlock(targetSid);
+
+    }
+
+    // 其他玩家取消完美格挡
+    public static void onCancelPerfectBlock(string dataString) {
+
+        string targetSid = dataString;
+
+        FieldScript.CancelPerfectBlock(targetSid);
+
+    }
+
+    // 其他玩家射击
+    public static void onShoot(string dataString) {
+
+        BulletInfo bulletInfo = JsonConvert.DeserializeObject<BulletInfo>(dataString);
+
+        if (!PlayerDataScript.FIELD_INFO.bidJson.ContainsKey(bulletInfo.bid)) {
+
+            PlayerDataScript.FIELD_INFO.bidJson.Add(bulletInfo.bid, bulletInfo);
+
+        }
+
+        FieldScript.Shoot(bulletInfo);
+
+    }
+
+    // 其他玩家完美格挡了子弹
+    public static void onPerfectBlockBullet(string dataString) {
+
+        Debug.Log(dataString);
+
+        BulletInfo bulletInfo = JsonConvert.DeserializeObject<BulletInfo>(dataString);
+
+        if (PlayerDataScript.FIELD_INFO.bidJson.ContainsKey(bulletInfo.bid)) {
+
+            PlayerDataScript.FIELD_INFO.bidJson.Remove(bulletInfo.bid);
+
+        }
+
+        FieldScript.PerfectBlockBullet(bulletInfo);
+        
+    }
+
+    // 其他玩家普通格挡了子弹
+    public static void onBlockBullet(string dataString) {
+
+        BulletInfo bulletInfo = JsonConvert.DeserializeObject<BulletInfo>(dataString);
+
+        if (PlayerDataScript.FIELD_INFO.bidJson.ContainsKey(bulletInfo.bid)) {
+
+            PlayerDataScript.FIELD_INFO.bidJson.Remove(bulletInfo.bid);
+
+        }
+
+        FieldScript.BlockBullet(bulletInfo);
+        
+    }
+
+    // 其他玩家被子弹直接击中
+    public static void onBeAttacked(string dataString) {
+
+        BulletInfo bulletInfo = JsonConvert.DeserializeObject<BulletInfo>(dataString);
+
+        if (PlayerDataScript.FIELD_INFO.bidJson.ContainsKey(bulletInfo.bid)) {
+
+            PlayerDataScript.FIELD_INFO.bidJson.Remove(bulletInfo.bid);
+
+        }
+
+        FieldScript.BeAttacked(bulletInfo);
+        
     }
 
     // TODO 退出登录

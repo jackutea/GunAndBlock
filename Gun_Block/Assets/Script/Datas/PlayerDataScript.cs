@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class PlayerDataScript {
 
+    public static string sid = "";
     public static string USER_NAME = "";
     public static string ROLE_NAME = "";
     public static Dictionary<string, RoleState> ROLES = new Dictionary<string, RoleState>();

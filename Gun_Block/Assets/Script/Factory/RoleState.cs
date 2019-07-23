@@ -27,8 +27,8 @@ public class RoleState{
     public float shootGap = 0;
     public float blockGapOrigin = 0.5f;
     public float blockGap = 0;
-    public float perfectBlockGapOrigin = 0.2f;
-    public float perfectBlockGap = 0;
+    public float perfectBlockLastOrigin = 0.2f;
+    public float perfectBlockLast = 0;
     public float moveSpeedOrigin = 2f;
     public float moveSpeed = 2f;
     public float shootSpeed = 4f;

@@ -99,8 +99,8 @@ public class FieldScript : MonoBehaviour {
         }
     }
 
-    // 他人移动
-    public static void BattleMove(string sid, int[] vecArray) {
+    // 有人移动
+    public static void Move(string sid, int[] vecArray) {
 
         Vector2 po = new Vector2(vecArray[0], vecArray[1]);
 
@@ -122,7 +122,7 @@ public class FieldScript : MonoBehaviour {
 
     }
 
-    // 他人取消移动
+    // 有人取消移动
     public static void CancelMove(string sid) {
 
         GameObject go = GameObject.Find(sid);
@@ -134,5 +134,127 @@ public class FieldScript : MonoBehaviour {
         Debug.Log(sid + " : 取消了移动");
 
     }
+
+    // 有人射击
+    public static void Shoot(BulletInfo bulletInfo) {
+
+        string sid = bulletInfo.sid;
+
+        Debug.Log(sid);
+
+        GameObject go = GameObject.Find(sid);
+
+        RoleScript roleScript = go.GetComponent<RoleScript>();
+
+        roleScript.shootBullet(bulletInfo);
+
+        Debug.Log("对方子弹速度" + bulletInfo.shootSpeed);
+
+    }
+
+    // 有人格挡
+    public static void Block(string sid) {
+
+        GameObject go = GameObject.Find(sid);
+
+        RoleScript roleScript = go.GetComponent<RoleScript>();
+
+        roleScript.roleState.isBlocking = true;
+    }
+
+    // 有人取消格挡
+    public static void CancelBlock(string sid) {
+
+        GameObject go = GameObject.Find(sid);
+
+        RoleScript roleScript = go.GetComponent<RoleScript>();
+
+        roleScript.roleState.isBlocking = false;
+    }
+
+    // 有人完美格挡
+    public static void PerfectBlock(string sid) {
+
+        GameObject go = GameObject.Find(sid);
+
+        RoleScript roleScript = go.GetComponent<RoleScript>();
+
+        roleScript.roleState.isPerfectBlocking = true;
+    }
+
+    // 有人取消完美格挡
+    public static void CancelPerfectBlock(string sid) {
+
+        GameObject go = GameObject.Find(sid);
+
+        RoleScript roleScript = go.GetComponent<RoleScript>();
+
+        roleScript.roleState.isPerfectBlocking = false;
+    }
+
+    // 有人完美格挡了子弹
+    public static void PerfectBlockBullet(BulletInfo bulletInfo) {
+
+        GameObject bulletGo = GameObject.Find(bulletInfo.bid);
+
+        if (bulletGo != null) Destroy(bulletGo);
+
+        string sid = bulletInfo.sid;
+
+        BulletInfo bi = new BulletInfo(sid);
+
+        bi.dmg = bulletInfo.dmg;
+
+        bi.shootSpeed = bulletInfo.shootSpeed;
+
+        bi.direct = bulletInfo.direct;
+
+        GameObject roleGo = GameObject.Find(sid);
+
+        Debug.Log(roleGo.name);
+
+        RoleScript roleScript = roleGo.GetComponent<RoleScript>();
+
+        roleScript.shootBullet(bi);
+
+    }
     
+    // 有人普通格挡了子弹
+    public static void BlockBullet(BulletInfo bulletInfo) {
+
+        GameObject bulletGo = GameObject.Find(bulletInfo.bid);
+
+        if (bulletGo != null) Destroy(bulletGo);
+
+        GameObject roleGo = GameObject.Find(bulletInfo.sid);
+
+        RoleScript roleScript = roleGo.GetComponent<RoleScript>();
+
+        roleScript.roleState.blockLife -= bulletInfo.dmg;
+
+        if (roleScript.roleState.blockLife <= 0) {
+
+            roleScript.roleState.life -= bulletInfo.dmg;
+
+        }
+    }
+
+    // 有人被子弹直接击中
+    public static void BeAttacked(BulletInfo bulletInfo) {
+
+        GameObject bulletGo = GameObject.Find(bulletInfo.bid);
+
+        if (bulletGo != null) Destroy(bulletGo);
+
+        GameObject roleGo = GameObject.Find(bulletInfo.sid);
+
+        RoleScript roleScript = roleGo.GetComponent<RoleScript>();
+
+        roleScript.roleState.life -= bulletInfo.dmg;
+
+        Debug.Log(roleScript.roleState.roleName + "的剩余生命值" + roleScript.roleState.life);
+
+    }
+
+    // 有人挂菜
 }
