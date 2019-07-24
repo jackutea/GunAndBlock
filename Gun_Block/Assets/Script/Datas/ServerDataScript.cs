@@ -5,9 +5,7 @@ using UnityEngine;
 class ServerDataScript {
 
     public static int[] serverIdList;
-
-    public static int[] serverUserCountList;
-
+    public static string[] serverNameList;
     public static int choosenServerId = -1;
 
 }

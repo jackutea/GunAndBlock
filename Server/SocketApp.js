@@ -1,12 +1,13 @@
 var event = require("events");
 var cluster = require("cluster");
+var Redis = require("redis");
 
 var CuteUDP = require("./CuteUDP/CuteUDP");
 
 // 主进程，负责 I/O 调度
 class SocketApp extends event {
 
-    constructor() {
+    constructor(redisPort, remoteIp, remotePort, localPort) {
 
         super();
 
@@ -18,7 +19,9 @@ class SocketApp extends event {
 
         SocketApp.battleCluster = cluster.workers["3"];
 
-        this.cuteUDP = new CuteUDP("127.0.0.1", 9999, 10000);
+        this.cuteUDP = new CuteUDP(remoteIp, remotePort, localPort);
+
+        this.rds = Redis.createClient(redisPort, "localhost");
 
         this.initClusterListener();
 
@@ -26,26 +29,33 @@ class SocketApp extends event {
 
         this.initMainClusterListener();
 
-        this.initGD();
+        this.openServer(1);
 
     }
 
-    // 初始化全局变量
-    initGD() {
+    openServer(serverCount, i) {
 
-        SocketApp.hallCluster.send({eventName : "InitHallGD", dataString : "", sid : ""});
+        let serverNameList = ["枪林弹雨", "独木难支", "百步穿杨", "固若金汤"];
 
-        this.on("InitCompareGD", (dataString, sid) => {
+        if (i === undefined) i = 0;
 
-            SocketApp.compareCluster.send({eventName : "InitCompareGD", dataString : dataString, sid : ""});
+        serverCount = (serverCount === undefined) ? serverNameList.length : serverCount;
 
-        });
+        if (i < serverCount) {
 
-        this.on("InitBattleGD", (dataString, sid) => {
+            this.rds.hset("serverList", "serverId", i.toString());
 
-            SocketApp.battleCluster.send({eventName : "InitBattleGD", dataString : dataString, sid : ""});
+            this.rds.hset("serverList", "serverName", serverNameList[i]);
 
-        });
+            i += 1;
+
+            this.openServer(serverCount, i);
+
+        } else {
+
+            console.log(serverCount, "个服务器开启");
+
+        }
     }
 
     // 初始化进程监听器
@@ -97,7 +107,7 @@ class SocketApp extends event {
 
         // Compare Cluster 负责处理
         // 匹配申请
-        this.cuteUDP.on("Compare", this.compareReq); 
+        this.cuteUDP.on("Compare", (dataString, sid) => { this.clusterReq("compare", dataString, sid, "Compare"); }); 
 
         // Battle Cluster 负责处理
         this.cuteUDP.on("Move", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "Move"); }); 
@@ -120,6 +130,7 @@ class SocketApp extends event {
 
         this.cuteUDP.on("BeAttacked", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "BeAttacked"); }); 
 
+        this.cuteUDP.on("Dead", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "Dead"); }); 
 
     }
 
@@ -163,7 +174,16 @@ class SocketApp extends event {
         // ———— Compare Cluster ————
         this.on("CompareWait", (dataString, sid) => { this.socketRes(dataString, sid, "CompareWait"); });
 
-        this.on("CompareSuccess", this.compareSucessRes); // 匹配成功
+        this.on("CompareSuccess", (dataString, sid1) => {
+
+            this.clusterReq("battle", dataString, sid1, "LoadFieldJson");
+
+            this.on("LoadFieldSuccess", (dataJson, sid2) => {
+
+                this.battleSocketRes(dataJson, sid2, "CompareSuccess");
+
+            })
+        });  // 匹配成功
 
         // ———— Battle Cluster ————
         // 移动
@@ -186,6 +206,9 @@ class SocketApp extends event {
         this.on("BlockBullet", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "BlockBullet"); });
 
         this.on("BeAttacked", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "BeAttacked"); });
+
+        this.on("Dead", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "Dead"); });
+
     }
 
     // 进程请求
@@ -235,59 +258,6 @@ class SocketApp extends event {
                             
         })
     }
-
-    // 开始匹配 请求
-    // dataString = int modeCode
-    // 只负责添加到匹配列表，之后由服务器匹配心跳去处理
-    compareReq(dataString, sid) {
-
-        process.nextTick(() => {
-
-            let modeCode = dataString;
-
-            SocketApp.hallCluster.send({ eventName: "RequestHallGD", dataString: modeCode, sid: sid});
-
-            SocketApp.instance.on("RequestHallGD", (data, sid) => {
-                
-                let roleState = data.roleState;
-
-                SocketApp.compareCluster.send({ eventName: "PreCompare", dataString: {roleState: roleState, dataString : dataString}, sid: sid })
-
-            });
-        })
-    }
-
-    // 匹配成功 回应
-    // 向HALL请求玩家数据，成功后向BATTLE注入战斗数据，注入成功后，推送给客户端
-    // dataString = sidJson 键值对为 sid : {}
-    compareSucessRes(dataString, sid) {
-
-        process.nextTick(() => {
-
-            let sidJson = JSON.parse(dataString);
-
-            let sidArray = Object.keys(sidJson);
-
-            SocketApp.hallCluster.send({ eventName: "RequestRoleState", dataString: sidJson, sid: ""});
-
-            this.on("RequestRoleState", (_sidJson, nothing) => {
-
-                SocketApp.battleCluster.send({ eventName: "BattleLoadField", dataString: _sidJson, sid: ""});
-
-            })
-
-            this.on("BattleLoadField", (_fieldInfo, nothing) => {
-
-                // console.log("收到 fieldInfo:", _fieldInfo);
-
-                let fieldInfo = _fieldInfo;
-
-                SocketApp.instance.cuteUDP.emitBrocast("CompareSuccess", JSON.stringify(fieldInfo), sidArray, true);
-
-            });
-        })
-    }
-
 }
 
 module.exports = SocketApp;

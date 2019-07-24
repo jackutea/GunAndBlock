@@ -6,6 +6,14 @@ var HallApp = require("./HallApp");
 var CompareApp = require("./CompareApp");
 var BattleApp = require("./BattleApp");
 
+var redisPort = 6380;
+
+var remotePort = 9999;
+
+var localPort = 10000;
+
+var remoteIp = "127.0.0.1";
+
 if (cluster.isMaster) {
 
     for (let i = 0; i < 3; i += 1) {
@@ -14,25 +22,25 @@ if (cluster.isMaster) {
 
     }
     
-    new SocketApp();
+    new SocketApp(redisPort, remoteIp, remotePort, localPort);
 
 } else {
 
     if (cluster.worker.id === 1) {
 
-        let hallApp = new HallApp();
+        new HallApp(redisPort, remoteIp);
 
     }
 
     if (cluster.worker.id === 2) {
 
-        new CompareApp();
+        new CompareApp(redisPort, remoteIp);
 
     }
 
     if (cluster.worker.id === 3) {
 
-        new BattleApp();
+        new BattleApp(redisPort, remoteIp);
 
     }
 }

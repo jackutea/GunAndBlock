@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -20,6 +21,9 @@ public class RoleScript : MonoBehaviour {
 
     public float currentX;
     public float currentY;
+
+    public Slider hpSlider;
+    public Slider blockSlider;
 
     public Dictionary<KeyCode, Action<KeyCode>> keyActDic;
 
@@ -54,6 +58,8 @@ public class RoleScript : MonoBehaviour {
         aniCheck(); // 动画更替
 
         timeReduce();
+
+        barCheck(); // 生命值显示
 
         if (!isMe) return;
 
@@ -208,6 +214,34 @@ public class RoleScript : MonoBehaviour {
 
             roleState.isPerfectBlocking = false;
         }
+    }
+
+    void barCheck() {
+
+        float fullHp = roleState.lifeOrigin;
+
+        float nowHp = roleState.life;
+
+        hpSlider.direction = Slider.Direction.LeftToRight;
+
+        hpSlider.minValue = 0;
+
+        hpSlider.maxValue = fullHp;
+
+        hpSlider.value = nowHp;
+
+        float fullBlockLife = roleState.blockLifeOrigin;
+
+        float nowBlockLife = roleState.blockLife;
+
+        blockSlider.direction = Slider.Direction.LeftToRight;
+
+        blockSlider.minValue = 0;
+
+        blockSlider.maxValue = fullBlockLife;
+
+        blockSlider.value = nowBlockLife;
+
     }
 
     // 注册按键事件
@@ -366,7 +400,7 @@ public class RoleScript : MonoBehaviour {
 
             string moveInfoString = JsonUtility.ToJson(moveInfo);
 
-            Debug.LogWarning(moveInfoString);
+            // Debug.LogWarning(moveInfoString);
 
             CuteUDPManager.cuteUDP.emitServer("Move", moveInfoString);
 
@@ -424,7 +458,7 @@ public class RoleScript : MonoBehaviour {
 
             }
 
-            Debug.Log("我发射子弹，速度" + bulletScript.bulletInfo.shootSpeed);
+            // Debug.Log("我发射子弹，速度" + bulletScript.bulletInfo.shootSpeed);
 
             string dataString = JsonConvert.SerializeObject(bulletScript.bulletInfo);
 
@@ -446,7 +480,7 @@ public class RoleScript : MonoBehaviour {
 
             }
 
-            Debug.Log("他人发射子弹，速度:" + bulletScript.bulletInfo.shootSpeed);
+            // Debug.Log("他人发射子弹，速度:" + bulletScript.bulletInfo.shootSpeed);
 
         }
     }
@@ -493,13 +527,13 @@ public class RoleScript : MonoBehaviour {
     }
 
     // 死亡
-    void dead() {
+    public void dead() {
 
         roleState.isDead = true;
 
         roleSpriteRenderer.sortingOrder = 1;
 
-        // TODO
+        CuteUDPManager.cuteUDP.emitServer("Dead", "");
 
     }
 
@@ -511,14 +545,14 @@ public class RoleScript : MonoBehaviour {
         // 我，是左边，碰到了右边来的子弹
         if (col.tag == "RightAllyBullet" && roleState.isLeftAlly && isMe) {
 
-            Debug.Log("碰到了右边来的子弹");
+            // Debug.Log("碰到了右边来的子弹");
 
             beAttacked(bs, col);
 
         // 我，是右边，碰到了左边来的子弹
         } else if (col.tag == "LeftAllyBullet" && !roleState.isLeftAlly && isMe) {
 
-            Debug.Log("碰到了左边来的子弹");
+            // Debug.Log("碰到了左边来的子弹");
 
             beAttacked(bs, col);
             
@@ -528,54 +562,57 @@ public class RoleScript : MonoBehaviour {
     // 被子弹射中 子弹id 为 bs.bid
     void beAttacked(BulletScript bs, Collider col) {
 
-        if (roleState.isPerfectBlocking) {
+        if (roleState.isDead == false) {
 
-            Debug.Log("完美格挡了" + col.gameObject);
+            if (roleState.isPerfectBlocking) {
 
-            bs.bulletInfo.bePerfectBlock();
+                // Debug.Log("完美格挡了" + col.gameObject);
 
-            bs.gameObject.tag = (col.tag == "LeftAllyBullet") ? "RightAllyBullet" : "LeftAllyBullet";
+                bs.bulletInfo.bePerfectBlock();
 
-            string dataString = JsonConvert.SerializeObject(bs.bulletInfo);
+                bs.gameObject.tag = (col.tag == "LeftAllyBullet") ? "RightAllyBullet" : "LeftAllyBullet";
 
-            CuteUDPManager.cuteUDP.emitServer("PerfectBlockBullet", dataString);
+                string dataString = JsonConvert.SerializeObject(bs.bulletInfo);
 
-        } else if (roleState.isBlocking && !roleState.isPerfectBlocking) {
+                CuteUDPManager.cuteUDP.emitServer("PerfectBlockBullet", dataString);
 
-            Debug.Log("格挡了" + col.gameObject);
+            } else if (roleState.isBlocking && !roleState.isPerfectBlocking) {
 
-            roleState.blockLife -= bs.bulletInfo.dmg;
+                // Debug.Log("格挡了" + col.gameObject);
 
-            if (roleState.blockLife <= 0) {
+                roleState.blockLife -= bs.bulletInfo.dmg;
+
+                if (roleState.blockLife <= 0) {
+
+                    roleState.life -= bs.bulletInfo.dmg;
+
+                    if (roleState.life <= 0) dead(); // awsl
+
+                }
+
+                Destroy(col.gameObject);
+
+                string dataString = JsonConvert.SerializeObject(bs.bulletInfo);
+
+                CuteUDPManager.cuteUDP.emitServer("BlockBullet", dataString);
+
+            } else if (!roleState.isBlocking) {
+
+                // Debug.Log("被" + col.gameObject + "射中了");
 
                 roleState.life -= bs.bulletInfo.dmg;
 
                 if (roleState.life <= 0) dead(); // awsl
 
+                // Debug.Log(roleState.roleName + "（我）的剩余生命值" + roleState.life);
+
+                Destroy(col.gameObject);
+
+                string dataString = JsonConvert.SerializeObject(bs.bulletInfo);
+
+                CuteUDPManager.cuteUDP.emitServer("BeAttacked", dataString);
+
             }
-
-            Destroy(col.gameObject);
-
-            string dataString = JsonConvert.SerializeObject(bs.bulletInfo);
-
-            CuteUDPManager.cuteUDP.emitServer("BlockBullet", dataString);
-
-        } else if (!roleState.isBlocking) {
-
-            Debug.Log("被" + col.gameObject + "射中了");
-
-            roleState.life -= bs.bulletInfo.dmg;
-
-            if (roleState.life <= 0) dead(); // awsl
-
-            Debug.Log(roleState.roleName + "（我）的剩余生命值" + roleState.life);
-
-            Destroy(col.gameObject);
-
-            string dataString = JsonConvert.SerializeObject(bs.bulletInfo);
-
-            CuteUDPManager.cuteUDP.emitServer("BeAttacked", dataString);
-
         }
     }
 }

@@ -9,8 +9,6 @@ class ServerInfo {
         
         this.onlineUserCount = 0;
 
-        this.roomJson = {};
-
     }
 }
 

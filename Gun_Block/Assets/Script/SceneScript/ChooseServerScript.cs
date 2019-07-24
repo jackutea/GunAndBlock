@@ -48,7 +48,7 @@ public class ChooseServerScript : MonoBehaviour {
 
         int[] serverIdList = ServerDataScript.serverIdList;
 
-        int[] severUserCountList = ServerDataScript.serverUserCountList;
+        string[] serverNameList = ServerDataScript.serverNameList;
 
         int xLine = 0;
 
@@ -58,7 +58,7 @@ public class ChooseServerScript : MonoBehaviour {
         
         float yDis = - 160f;
 
-        for (int i = 0; i < severUserCountList.Length; i += 1) {
+        for (int i = 0; i < serverNameList.Length; i += 1) {
 
             GameObject oneServer = Instantiate(PrefabCollection.instance.serverPanelPrefab, HUDPanel.transform);
 
@@ -70,7 +70,7 @@ public class ChooseServerScript : MonoBehaviour {
 
             Text serverUserCount = serverTxt[1];
 
-            serverUserCount.text = severUserCountList[i].ToString() + "人";
+            serverUserCount.text = serverNameList[i];
 
             Button chooseServerBtn = oneServer.GetComponentInChildren<Button>();
 

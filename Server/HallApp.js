@@ -1,18 +1,20 @@
 var event = require("events");
 var cluster = require("cluster");
+var Redis = require("redis");
 
 var mongoDB = require("./mongoDB/mongoDB");
 
 var Factory = require("./AllClass/Factory");
-var HALL_GD = require("./GlobalData/HALL_GD");
 
 class HallApp extends event {
 
-    constructor() {
+    constructor(redisPort, redisIp) {
 
         super();
 
         HallApp.instance = this;
+
+        this.rds = Redis.createClient(redisPort, redisIp);
 
         this.initClusterListener();
 
@@ -45,19 +47,6 @@ class HallApp extends event {
 
     }
 
-    // 初始化全局变量
-    initHallGD(dataString, sid) {
-
-        HALL_GD.CreateGD(() => {
-
-            process.send({ eventName: "InitCompareGD", dataString: HALL_GD.SERVER_LIST, sid: sid});
-
-            process.send({ eventName: "InitBattleGD", dataString: "", sid: sid});
-
-        });
-
-    }
-
     // 初始化进程监听事件
     initHallClusterListener() {
 
@@ -66,9 +55,6 @@ class HallApp extends event {
             console.log("HallApp Event Error:", err);
             
         })
-
-        // 处理主线程请求
-        this.on("InitHallGD", this.initHallGD);
 
         // 处理客户端请求
         this.on("Register", this.register); // 注册
@@ -86,10 +72,6 @@ class HallApp extends event {
         this.on("EnterGame", this.enterGame); // 选定角色后进入游戏
 
         this.on("ShowRoom", this.showRoom); // 显示服务器自定义房间
-
-        this.on("RequestHallGD", this.requestHallGD);
-
-        this.on("RequestRoleState", this.requestRoleState);
 
     }
 
@@ -120,9 +102,11 @@ class HallApp extends event {
 
                     accountState.password = password;
 
-                    HALL_GD.ONLINE_ACCOUNT[sid] = username; // 添加玩家信息
+                    this.rds.hset(sid, "username", username);
 
-                    mongoDB.insertOne("account", accountState, (err, result) => {
+                    this.rds.hset(username, "sid", sid);
+
+                    mongoDB.insertOne("account", accountState, (err3, result) => {
 
                         let loginSendInfo = new Factory.LoginSendInfo(0, "注册成功，直接登录");
 
@@ -172,11 +156,14 @@ class HallApp extends event {
 
                         // console.log(username, "密码正确，直接登录");
 
-                        HALL_GD.ONLINE_ACCOUNT[sid] = username; // 添加玩家信息
+                        this.rds.hset(sid, "username", username)
+
+                        this.rds.hset(username, "sid", sid)
 
                         let loginSendInfo = new Factory.LoginSendInfo(0, "登录成功");
 
                         process.send({ eventName: "Login", dataString: JSON.stringify(loginSendInfo), sid: sid});
+
 
                     } else {
 
@@ -187,7 +174,6 @@ class HallApp extends event {
                         process.send({ eventName: "Login", dataString: JSON.stringify(loginSendInfo), sid: sid});
 
                     }
-                    
                 }
             });
         })
@@ -200,8 +186,18 @@ class HallApp extends event {
 
             let serverSendInfo = new Factory.ServerSendInfo();
 
-            process.send({ eventName: "ShowServer", dataString: JSON.stringify(serverSendInfo), sid: sid});
-                    
+            this.rds.hvals("serverName", (err0, data0) => {
+
+                serverSendInfo.serverNameList = data0;
+
+                this.rds.hvals("serverId", (err1, data1) => {
+
+                    serverSendInfo.serverIdList = data1;
+
+                    process.send({ eventName: "ShowServer", dataString: JSON.stringify(serverSendInfo), sid: sid});
+
+                })
+            })
         })
     }
 
@@ -212,30 +208,33 @@ class HallApp extends event {
 
             let serverId = parseInt(dataString);
 
-            let username = HALL_GD.ONLINE_ACCOUNT[sid];
+            this.rds.hget(sid, "username", (err0, data) => {
 
-            let findObj = {inServerId : serverId, username : username};
+                let username = data;
 
-            mongoDB.find("role", findObj, (err, result) => {
+                let findObj = {inServerId : serverId, username : username};
 
-                let roleListSendInfo = new Factory.RoleListSendInfo();
+                mongoDB.find("role", findObj, (err1, result) => {
 
-                roleListSendInfo.roleJson = {};
+                    let roleListSendInfo = new Factory.RoleListSendInfo();
 
-                for (let i = 0; i < result.length; i += 1) {
+                    roleListSendInfo.roleJson = {};
 
-                    let roleState = result[i];
+                    for (let i = 0; i < result.length; i += 1) {
 
-                    delete roleState["_id"];
+                        let roleState = result[i];
 
-                    let roleName = roleState.roleName;
+                        delete roleState["_id"];
 
-                    roleListSendInfo.roleJson[roleName] = roleState;
+                        let roleName = roleState.roleName;
 
-                }
+                        roleListSendInfo.roleJson[roleName] = roleState;
 
-                process.send({ eventName: "ShowRoles", dataString: JSON.stringify(roleListSendInfo), sid: sid});
+                    }
 
+                    process.send({ eventName: "ShowRoles", dataString: JSON.stringify(roleListSendInfo), sid: sid});
+
+                });
             });
         })
     }
@@ -251,33 +250,36 @@ class HallApp extends event {
 
             let serverId = roleInfo.serverId;
 
-            let username = HALL_GD.ONLINE_ACCOUNT[sid];
+            this.rds.hget(sid, "username", (err0, data) => {
 
-            let roleState = new Factory.RoleState();
+                let username = data;
 
-            roleState.roleName = roleName;
+                let roleState = new Factory.RoleState();
 
-            roleState.username = username;
+                roleState.roleName = roleName;
 
-            roleState.inServerId = serverId;
+                roleState.username = username;
 
-            let findObj = {roleName : roleName};
+                roleState.inServerId = serverId;
 
-            mongoDB.findOne("role", findObj, (err, result) => {
+                let findObj = {roleName : roleName};
 
-                if (result) {
+                mongoDB.findOne("role", findObj, (err1, result) => {
 
-                    process.send({ eventName: "CreateRoleFail", dataString: "", sid: sid});
+                    if (result) {
 
-                } else {
+                        process.send({ eventName: "CreateRoleFail", dataString: "", sid: sid});
 
-                    mongoDB.insertOne("role", roleState, (err, result) => {
+                    } else {
 
-                        process.send({ eventName: "CreateRole", dataString: JSON.stringify(roleState), sid: sid});
-            
-                    });
-                }
-            })
+                        mongoDB.insertOne("role", roleState, (err2, result) => {
+
+                            process.send({ eventName: "CreateRole", dataString: JSON.stringify(roleState), sid: sid});
+                
+                        });
+                    }
+                })
+            });
         })
     }
 
@@ -305,52 +307,20 @@ class HallApp extends event {
 
             let roleState = JSON.parse(dataString); // TODO : 这里有可能被利用
 
-            let username = HALL_GD.ONLINE_ACCOUNT[sid];
+            this.rds.hget(sid, "username", (err0, data) => {
 
-            HALL_GD.ONLINE_ROLE[username] = roleState;
+                let username = data;
 
-            process.send({ eventName: "EnterGame", dataString: "", sid: sid});
-                    
+                this.rds.hset(username, "roleState", JSON.stringify(roleState))
+
+                process.send({ eventName: "EnterGame", dataString: "", sid: sid});
+
+            });
         })
     }
 
     // TODO : 显示自定义房间
     showRoom(dataString, sid) {
-
-    }
-
-    // 开始匹配 申请GD
-    requestHallGD(dataString, sid) {
-
-        let modeCode = dataString;
-
-        let username = HALL_GD.ONLINE_ACCOUNT[sid];
-
-        HALL_GD.ONLINE_ROLE[username].inComparingMode = parseInt(modeCode); // 角色状态设为正在匹配中
-
-        process.send({ eventName: "RequestHallGD", dataString: {roleState: HALL_GD.ONLINE_ROLE[username]}, sid: sid });
-
-    }
-
-    // 匹配成功 主线程请求角色数组
-    // dataString = sidJson 键值对为 sid : {}
-    requestRoleState(dataString, sid) {
-
-        let sidJson = dataString;
-
-        for (let sid in sidJson) {
-
-            let username = HALL_GD.ONLINE_ACCOUNT[sid];
-
-            let role = HALL_GD.ONLINE_ROLE[username];
-
-            role.sid = sid;
-
-            sidJson[sid] = role;
-
-        }
-
-        process.send({ eventName: "RequestRoleState", dataString: sidJson, sid: "" });
 
     }
 }

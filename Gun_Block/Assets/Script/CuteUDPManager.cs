@@ -100,8 +100,6 @@ public class CuteUDPManager : MonoBehaviour {
         // 显示自有角色
         cuteUDP.on<string>("ShowRoles", (string dataString) => {
 
-            Debug.Log("收到showroles");
-
             addQueue(CuteUDPEvent.onShowRoles, dataString);
 
         });
@@ -222,6 +220,13 @@ public class CuteUDPManager : MonoBehaviour {
         cuteUDP.on<string>("BeAttacked", (string dataString) => {
 
             addQueue(CuteUDPEvent.onBeAttacked, dataString);
+
+        });
+
+        // 其他玩家被子弹直接击中
+        cuteUDP.on<string>("Dead", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onDead, dataString);
 
         });
 

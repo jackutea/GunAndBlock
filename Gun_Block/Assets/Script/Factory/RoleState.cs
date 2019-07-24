@@ -20,8 +20,11 @@ public class RoleState{
     
     // 战时相关（不存入数据库）
     public int inFieldId = -1;
+    public float lifeOrigin = 5;
     public float life = 5;
+    public float blockLifeOrigin = 3;
     public float blockLife = 3;
+    public float damageOrigin = 1;
     public float damage = 1;
     public float shootGapOrigin = 1f;
     public float shootGap = 0;
@@ -31,6 +34,7 @@ public class RoleState{
     public float perfectBlockLast = 0;
     public float moveSpeedOrigin = 2f;
     public float moveSpeed = 2f;
+    public float shootSpeedOrigin = 4f;
     public float shootSpeed = 4f;
     public int[] vecArray = new int[2];
     public bool isLeftAlly = true;

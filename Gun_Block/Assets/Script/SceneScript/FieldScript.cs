@@ -67,7 +67,7 @@ public class FieldScript : MonoBehaviour {
 
             GameObject roleObj = Instantiate(PrefabCollection.instance.rolePrefab, battlePanel.transform);
 
-            roleObj.name = role.sid;
+            roleObj.name = sid;
 
             RoleScript roleScript = roleObj.GetComponentInChildren<RoleScript>();
 
@@ -104,22 +104,20 @@ public class FieldScript : MonoBehaviour {
 
         Vector2 po = new Vector2(vecArray[0], vecArray[1]);
 
+        Debug.Log("移动" + sid);
+
         GameObject go = GameObject.Find(sid);
 
         RoleScript roleScript = go.GetComponent<RoleScript>();
 
         roleScript.roleState.isMoving = true;
 
-        if (go == null) {
+        if (go != null) {
 
-            Debug.LogWarning("找不到对象 :" + sid);
+            go.transform.localPosition = po;
+
             
-            return;
-
         }
-
-        go.transform.localPosition = po;
-
     }
 
     // 有人取消移动
@@ -131,7 +129,7 @@ public class FieldScript : MonoBehaviour {
 
         roleScript.roleState.isMoving = false;
 
-        Debug.Log(sid + " : 取消了移动");
+        // Debug.Log(sid + " : 取消了移动");
 
     }
 
@@ -140,7 +138,7 @@ public class FieldScript : MonoBehaviour {
 
         string sid = bulletInfo.sid;
 
-        Debug.Log(sid);
+        Debug.Log("射击" + sid);
 
         GameObject go = GameObject.Find(sid);
 
@@ -148,7 +146,7 @@ public class FieldScript : MonoBehaviour {
 
         roleScript.shootBullet(bulletInfo);
 
-        Debug.Log("对方子弹速度" + bulletInfo.shootSpeed);
+        // Debug.Log("对方子弹速度" + bulletInfo.shootSpeed);
 
     }
 
@@ -252,9 +250,20 @@ public class FieldScript : MonoBehaviour {
 
         roleScript.roleState.life -= bulletInfo.dmg;
 
-        Debug.Log(roleScript.roleState.roleName + "的剩余生命值" + roleScript.roleState.life);
+        // Debug.Log(roleScript.roleState.roleName + "的剩余生命值" + roleScript.roleState.life);
 
     }
 
     // 有人挂菜
+    public static void Dead(string sid) {
+
+        GameObject go = GameObject.Find(sid);
+
+        RoleScript roleScript = go.GetComponent<RoleScript>();
+
+        roleScript.roleState.isDead = true;
+
+        roleScript.roleSpriteRenderer.sortingOrder = 1;
+
+    }
 }

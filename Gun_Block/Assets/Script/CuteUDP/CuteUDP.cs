@@ -308,7 +308,7 @@ namespace CuteUDPApp {
         // 发送 独立循环线程
         void sendUpdating() {
 
-            Debug.Log("线程启动成功");
+            // Debug.Log("线程启动成功");
 
             while(appRuning == true) {
 

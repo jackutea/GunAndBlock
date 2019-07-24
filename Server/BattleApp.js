@@ -1,20 +1,22 @@
 var event = require("events");
 var cluster = require("cluster");
-
-var BATTLE_GD = require("./GlobalData/BATTLE_GD");
-var FieldInfo = require("./AllClass/FieldInfo");
+var Redis = require("redis");
 
 class BattleApp extends event {
 
-    constructor() {
+    constructor(redisPort, redisIp) {
 
         super();
 
         BattleApp.instance = this;
 
+        this.rds = Redis.createClient(redisPort, redisIp);
+
         this.initClusterListener();
 
         this.initBattleClusterListener();
+
+        this.FieldJson = {};
 
     }
 
@@ -46,13 +48,9 @@ class BattleApp extends event {
     // 初始化进程监听事件
     initBattleClusterListener() {
 
-        this.on("error", (err) => { console.log("BattleApp Event Error:", err); })
+        this.on("error", (err) => { console.log("BattleApp Event Error:", err); });
 
-        this.on("InitBattleGD", (dataString, sid) => { BATTLE_GD.CreateGD(); }); // 初始化全局变量
-
-        this.on("BattleLoadField", this.battleLoadField); // 匹配成功，载入战场
-
-        this.on("RequestSidJson", this.requestSidJson); // 请求 sidJson 
+        this.on("LoadFieldJson", this.loadFieldJson);
 
         this.on("Move", this.move); // 玩家移动
 
@@ -74,52 +72,84 @@ class BattleApp extends event {
 
         this.on("BeAttacked", this.beAttacked); // 子弹直接命中
 
+        this.on("Dead", this.dead); // dead
+
     }
 
-    // 匹配成功，载入战场
-    // dataString = sidJson 键值对为 sid : roleState
-    battleLoadField(dataString, sid) {
+    // 新增战场数据
+    // dataString = FieldInfo
+    loadFieldJson(dataString, sid) {
 
         process.nextTick(() => {
 
-            let sidJson = dataString;
+            let fieldInfo = JSON.parse(dataString);
 
-            let index = BATTLE_GD.FIELD_JSON.length;
+            this.FieldJson[fieldInfo.fieldId] = fieldInfo;
 
-            let modeCode; // str
+            let sidJson = fieldInfo.sidJson;
 
-            let i = 0;
+            let sidArray = Object.keys(sidJson);
 
-            for (let _sid in sidJson) {
+            process.send({ eventName: "LoadFieldSuccess", dataString: {data: dataString, sidArray: sidArray}, sid: sid});
 
-                let role = sidJson[_sid];
+        });
+    }
 
-                if(modeCode === undefined) modeCode = role.inComparingMode;
+    getRedisSidJson(sid, callback) {
 
-                role.inFieldId = index;
+        process.nextTick(() => {
 
-                BATTLE_GD.ONLINE_ROLE[_sid] = role;
+            new Promise((res, rej) => {
 
-                let len = Object.keys(sidJson).length;
+                this.rds.hget(sid, "sidJson", (err, data) => {
 
-                if (i < len / 2) {
+                    if (data !== null) {
 
-                    role.isLeftAlly = true;
+                        let sidJson = data;
+
+                        res(sidJson);
+
+                    } else {
+
+                        res(false);
+
+                    }
+
+                });
+
+            }).then((data) => {
+
+                if (data === false) {
+
+                    this.rds.hget(sid, "username", (err0, data0) => {
+
+                        let username = data0;
+        
+                        this.rds.hget(username, "roleState", (err1, data1) => {
+
+                            let role = JSON.parse(data1);
+        
+                            let fieldIndex = role.inFieldId;
+
+                            let fieldInfo = this.FieldJson[fieldIndex];
+
+                            let sidJson = fieldInfo.sidJson;
+        
+                            this.rds.hset(sid, "sidJson", JSON.stringify(sidJson))
+
+                            callback(sidJson);
+
+                        });
+                    })
 
                 } else {
 
-                    role.isLeftAlly = false;
+                    let sidJson = JSON.parse(data);
+
+                    callback(sidJson);
 
                 }
-
-                i += 1;
-            }
-
-            BATTLE_GD.FIELD_JSON.push(new FieldInfo(index, modeCode, sidJson));
-
-            // 传FieldInfo回去
-            process.send({ eventName: "BattleLoadField", dataString : BATTLE_GD.FIELD_JSON[index], sid: "" });
-                    
+            });
         })
     }
 
@@ -128,16 +158,13 @@ class BattleApp extends event {
 
         process.nextTick(() => {
 
-            let role = BATTLE_GD.ONLINE_ROLE[sid];
+            this.getRedisSidJson(sid, (sidJson) => {
 
-            let fieldIndex = role.inFieldId;
+                let sidArray = Object.keys(sidJson);
 
-            let sidJson = BATTLE_GD.FIELD_JSON[fieldIndex].sidJson;
+                process.send({ eventName: eventName, dataString: {data: sid, sidArray: sidArray}, sid: sid});
 
-            let sidArray = Object.keys(sidJson);
-
-            process.send({ eventName: eventName, dataString: {data: sid, sidArray: sidArray}, sid: sid});
-
+            });
         })
     }
 
@@ -148,25 +175,13 @@ class BattleApp extends event {
 
             // console.log("BattleApp move :", dataString);
 
-            let moveInfo = JSON.parse(dataString); // moveInfo = 谁要移动，移到哪里
-
-            if (BATTLE_GD.ONLINE_ROLE[sid]) {
-
-                let role = BATTLE_GD.ONLINE_ROLE[sid]; // 请求移动的玩家（玩家列表变量内）
-
-                let fieldIndex = role.inFieldId; // 玩家所在战场ID
-
-                let sidJson = BATTLE_GD.FIELD_JSON[fieldIndex].sidJson;
-
-                let fieldRole = sidJson[sid]; // 玩家（战场变量内）
-
-                fieldRole.vecArray = moveInfo.v; // 玩家坐标修改为新上传坐标
+            this.getRedisSidJson(sid, (sidJson) => {
 
                 let sidArray = Object.keys(sidJson);
 
-                process.send({ eventName: "Move", dataString : {data: JSON.stringify(moveInfo), sidArray: sidArray}, sid: sid });
+                process.send({ eventName: "Move", dataString : {data: dataString, sidArray: sidArray}, sid: sid });
 
-            }
+            })
         })
     }
 
@@ -177,38 +192,15 @@ class BattleApp extends event {
 
             let bulletInfo = JSON.parse(dataString);
 
-            let role = BATTLE_GD.ONLINE_ROLE[sid];
-
-            let fieldIndex = role.inFieldId;
-
-            let sidJson = BATTLE_GD.FIELD_JSON[fieldIndex].sidJson;
-
             bulletInfo.sid = sid;
 
-            if (eventName === "PerfectBlockBullet" || eventName === "Shoot") {
+            this.getRedisSidJson(sid, (sidJson) => {
 
-                let bidJson = BATTLE_GD.FIELD_JSON[fieldIndex].bidJson;
+                let sidArray = Object.keys(sidJson);
 
-                bidJson[bulletInfo.bid] = bulletInfo;
+                process.send({ eventName: eventName, dataString: {data: JSON.stringify(bulletInfo), sidArray: sidArray} , sid: sid});
 
-            } else if (eventName === "BlockBullet") {
-
-                sidJson[sid].blockLife -= bulletInfo.dmg;
-
-                delete BATTLE_GD.FIELD_JSON[fieldIndex].bidJson[bulletInfo.bid];
-
-            } else if (eventName === "BeAttacked") {
-
-                sidJson[sid].life -= bulletInfo.dmg;
-
-                delete BATTLE_GD.FIELD_JSON[fieldIndex].bidJson[bulletInfo.bid];
-
-            }
-
-            let sidArray = Object.keys(sidJson);
-
-            process.send({ eventName: eventName, dataString: {data: JSON.stringify(bulletInfo), sidArray: sidArray} , sid: sid});
-
+            })
         })
     }
 
@@ -228,6 +220,27 @@ class BattleApp extends event {
     // dataString = BulletInfo
     beAttacked(dataString, sid) { this.bulletEvent(dataString, sid, "BeAttacked"); }
 
+    // dead
+    // dataString = ""
+    dead(dataString, sid) {
+
+        process.nextTick(() => {
+
+            this.rds.hget(sid, "fieldId", (err0, data0) => {
+
+                let fieldId = data0;
+
+                let sidJson = this.FieldJson[fieldId].sidJson
+
+                sidJson[sid].isDead = true;
+
+                let sidArray = Object.keys(sidJson);
+
+                process.send({ eventName: "Dead", dataString: {data: sid, sidArray: sidArray}, sid: sid});
+
+            });
+        })
+    }
 }
 
 module.exports = BattleApp;

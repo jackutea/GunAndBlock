@@ -26,9 +26,15 @@ class RoleState {
         // 战斗时相关（不会存入数据库）
         this.inFieldId = -1;
 
+        this.lifeOrigin = 5.0;
+
         this.life = 5.0;
+
+        this.blockLifeOrigin = 3.0;
         
         this.blockLife = 3.0;
+
+        this.damageOrigin = 1.0;
         
         this.damage = 1.0;
         
@@ -47,6 +53,8 @@ class RoleState {
         this.moveSpeedOrigin = 2.0;
         
         this.moveSpeed = 2.0;
+
+        this.shootSpeedOrigin = 4.0;
         
         this.shootSpeed = 4.0;
 

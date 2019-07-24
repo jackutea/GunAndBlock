@@ -325,7 +325,7 @@ class CuteUDP extends event {
     repeatSendMini(index, currentPacket) {
 
         process.nextTick(() => {
-        
+
             if (index < currentPacket.miniPacketList.length) {
 
                 let mid = currentPacket.miniPacketList[index].i;

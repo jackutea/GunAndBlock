@@ -35,7 +35,7 @@ class CuteUDPEvent : MonoBehaviour {
 
         ServerDataScript.serverIdList = serverRecvInfo.serverIdList;
 
-        ServerDataScript.serverUserCountList = serverRecvInfo.serverUserCountList;
+        ServerDataScript.serverNameList = serverRecvInfo.serverNameList;
 
         if (ServerDataScript.serverIdList.Length < 0) {
 
@@ -55,16 +55,13 @@ class CuteUDPEvent : MonoBehaviour {
 
         Dictionary<string, RoleState> roleJson = roleListInfo.roleJson;
 
-        PlayerDataScript.ROLES = roleJson;
+        if (roleJson != null) {
 
-        if (roleJson.Count > 0) {
+            PlayerDataScript.ROLES = roleJson;
 
-            Debug.Log(roleJson.Keys.First());
+            SceneManager.LoadScene("RoleList");
 
         }
-
-        SceneManager.LoadScene("RoleList");
-
     }
 
     // 删除角色回传
@@ -209,12 +206,6 @@ class CuteUDPEvent : MonoBehaviour {
 
         BulletInfo bulletInfo = JsonConvert.DeserializeObject<BulletInfo>(dataString);
 
-        if (!PlayerDataScript.FIELD_INFO.bidJson.ContainsKey(bulletInfo.bid)) {
-
-            PlayerDataScript.FIELD_INFO.bidJson.Add(bulletInfo.bid, bulletInfo);
-
-        }
-
         FieldScript.Shoot(bulletInfo);
 
     }
@@ -222,15 +213,7 @@ class CuteUDPEvent : MonoBehaviour {
     // 其他玩家完美格挡了子弹
     public static void onPerfectBlockBullet(string dataString) {
 
-        Debug.Log(dataString);
-
         BulletInfo bulletInfo = JsonConvert.DeserializeObject<BulletInfo>(dataString);
-
-        if (PlayerDataScript.FIELD_INFO.bidJson.ContainsKey(bulletInfo.bid)) {
-
-            PlayerDataScript.FIELD_INFO.bidJson.Remove(bulletInfo.bid);
-
-        }
 
         FieldScript.PerfectBlockBullet(bulletInfo);
         
@@ -241,12 +224,6 @@ class CuteUDPEvent : MonoBehaviour {
 
         BulletInfo bulletInfo = JsonConvert.DeserializeObject<BulletInfo>(dataString);
 
-        if (PlayerDataScript.FIELD_INFO.bidJson.ContainsKey(bulletInfo.bid)) {
-
-            PlayerDataScript.FIELD_INFO.bidJson.Remove(bulletInfo.bid);
-
-        }
-
         FieldScript.BlockBullet(bulletInfo);
         
     }
@@ -256,14 +233,18 @@ class CuteUDPEvent : MonoBehaviour {
 
         BulletInfo bulletInfo = JsonConvert.DeserializeObject<BulletInfo>(dataString);
 
-        if (PlayerDataScript.FIELD_INFO.bidJson.ContainsKey(bulletInfo.bid)) {
-
-            PlayerDataScript.FIELD_INFO.bidJson.Remove(bulletInfo.bid);
-
-        }
-
         FieldScript.BeAttacked(bulletInfo);
         
+    }
+
+    // 其他玩家dead
+    // dataString = sid
+    public static void onDead(string dataString) {
+
+        string sid = dataString;
+
+        FieldScript.Dead(sid);
+
     }
 
     // TODO 退出登录

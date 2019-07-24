@@ -1,6 +1,5 @@
 var LoginSendInfo = require("./LoginSendInfo");
 var RoomInfo = require("./RoomInfo");
-var RoomSendInfo = require("./RoomSendInfo");
 var RoleListSendInfo = require("./RoleListSendInfo");
 var ServerSendInfo = require("./ServerSendInfo");
 var ServerInfo = require("./ServerInfo");
@@ -12,8 +11,6 @@ class Factory {}
 Factory.LoginSendInfo = LoginSendInfo,
 
 Factory.RoomInfo = RoomInfo,
-
-Factory.RoomSendInfo = RoomSendInfo,
 
 Factory.RoleListSendInfo = RoleListSendInfo,
 
