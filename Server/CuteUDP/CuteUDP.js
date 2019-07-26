@@ -259,25 +259,28 @@ class CuteUDP extends event {
 
     // 向 sidArray 列表内所有人广播
     emitBrocast(eventName, objStr, sidArray, notSendMineSid) {
-        
-        for (let index = 0; index < sidArray.length; index += 1) {
 
-            let sid = sidArray[index];
+        process.nextTick(() => {
 
-            if (notSendMineSid) {
+            for (let index = 0; index < sidArray.length; index += 1) {
 
-                if (sid != notSendMineSid) {
+                let sid = sidArray[index];
+
+                if (notSendMineSid) {
+
+                    if (sid != notSendMineSid) {
+
+                        this.emitBackTo(eventName, objStr, sid);
+
+                    }
+
+                } else {
 
                     this.emitBackTo(eventName, objStr, sid);
 
                 }
-
-            } else {
-
-                this.emitBackTo(eventName, objStr, sid);
-
             }
-        }
+        })
     }
 
     // 回传消息
@@ -382,6 +385,8 @@ class CuteUDP extends event {
 
                 // 触发自定义事件
                 this.emit(packetHeader.n, "", sid);
+
+                console.log("触发空包事件", packetHeader.n);
 
                 delete this.recvJson[sid][packetHeader.i];
 
@@ -515,6 +520,8 @@ class CuteUDP extends event {
 
                         // 触发自定义事件
                         this.emit(currentBasePacket.packetHeader.n, currentBasePacket.fullStr, sid);
+
+                        console.log("触发非空包事件", currentBasePacket.packetHeader.n);
 
                         // 触发完删除旧包头
                         delete this.recvJson[sid][currentBasePacket.packetHeader.i];

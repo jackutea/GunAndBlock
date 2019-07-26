@@ -6,7 +6,7 @@ using System.Collections.Generic;
 public class FieldInfo {
 
     public int fieldId; 
-    public int modeCode;
+    public string modeCode;
     public Dictionary<string, RoleState> sidJson;
 
 }

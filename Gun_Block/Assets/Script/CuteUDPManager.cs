@@ -90,6 +90,12 @@ public class CuteUDPManager : MonoBehaviour {
         
         });
 
+        cuteUDP.on<string>("Register", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onLogin, dataString);
+        
+        });
+
         // 显示服务器
         cuteUDP.on<string>("ShowServer", (string dataString) => {
 
@@ -150,83 +156,6 @@ public class CuteUDPManager : MonoBehaviour {
         cuteUDP.on<string>("ShowRoom", (string dataString) => {
 
             addQueue(CuteUDPEvent.onShowRoom, dataString);
-
-        });
-
-        // 其他玩家移动
-        cuteUDP.on<string>("Move", (string dataString) => {
-
-            addQueue(CuteUDPEvent.onMove, dataString);
-
-        });
-
-        // 其他玩家取消移动
-        cuteUDP.on<string>("CancelMove", (string dataString) => {
-
-            addQueue(CuteUDPEvent.onCancelMove, dataString);
-
-        });
-
-        // 其他玩家格挡
-        cuteUDP.on<string>("Block", (string dataString) => {
-
-            addQueue(CuteUDPEvent.onBlock, dataString);
-
-        });
-
-        // 其他玩家取消格挡
-        cuteUDP.on<string>("CancelBlock", (string dataString) => {
-
-            addQueue(CuteUDPEvent.onCancelBlock, dataString);
-
-        });
-
-        // 其他玩家完美格挡
-        cuteUDP.on<string>("PerfectBlock", (string dataString) => {
-
-            addQueue(CuteUDPEvent.onPerfectBlock, dataString);
-
-        });
-
-        // 其他玩家取消完美格挡
-        cuteUDP.on<string>("CancelPerfectBlock", (string dataString) => {
-
-            addQueue(CuteUDPEvent.onCancelPerfectBlock, dataString);
-
-        });
-
-        // 其他玩家射击
-        cuteUDP.on<string>("Shoot", (string dataString) => {
-
-            addQueue(CuteUDPEvent.onShoot, dataString);
-
-        });
-
-        // 其他玩家完美格挡了子弹
-        cuteUDP.on<string>("PerfectBlockBullet", (string dataString) => {
-
-            addQueue(CuteUDPEvent.onPerfectBlockBullet, dataString);
-
-        });
-
-        // 其他玩家普通格挡了子弹
-        cuteUDP.on<string>("BlockBullet", (string dataString) => {
-
-            addQueue(CuteUDPEvent.onBlockBullet, dataString);
-
-        });
-
-        // 其他玩家被子弹直接击中
-        cuteUDP.on<string>("BeAttacked", (string dataString) => {
-
-            addQueue(CuteUDPEvent.onBeAttacked, dataString);
-
-        });
-
-        // 其他玩家被子弹直接击中
-        cuteUDP.on<string>("Dead", (string dataString) => {
-
-            addQueue(CuteUDPEvent.onDead, dataString);
 
         });
 

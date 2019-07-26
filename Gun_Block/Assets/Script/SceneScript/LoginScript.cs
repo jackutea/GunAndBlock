@@ -20,6 +20,8 @@ public class LoginScript : MonoBehaviour {
     public Text newRePassword;
     public Button confirmRegisterBtn;
     public Button backLoginBtn;
+
+    public float i;
     
 
     void Awake() {
@@ -114,6 +116,15 @@ public class LoginScript : MonoBehaviour {
     }
 
     void Update() {
+
+        i += Time.deltaTime;
+
+        if (i > 50f) {
+
+            Debug.Log("true");
+
+            i = 0;
+        }
         
     }
 }

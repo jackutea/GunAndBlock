@@ -80,15 +80,8 @@ public class HomeScript : MonoBehaviour {
 
     void compareSend(string modeCode) {
 
-        if (PlayerDataScript.ROLE_STATE.inComparingMode != -1) {
+        CuteUDPManager.cuteUDP.emitServer("Compare", modeCode);
 
-            CuteUDPEvent.showAlertWindow("正在匹配中");
-
-        } else {
-
-            CuteUDPManager.cuteUDP.emitServer("Compare", modeCode);
-
-        }
     }
 
     void Update() {
@@ -97,6 +90,8 @@ public class HomeScript : MonoBehaviour {
 
     // 加载角色信息
     void showRoleInfo() {
+
+        if (PlayerDataScript.ROLE_STATE == null) return;
 
         RoleState rs = PlayerDataScript.ROLE_STATE;
 
@@ -116,17 +111,5 @@ public class HomeScript : MonoBehaviour {
         
         blockLife.text = "盾强度 : " + rs.blockLife.ToString();
         
-        damage.text = "伤害 : " + rs.damage.ToString();
-        
-        shootGap.text = "射击时间间隔 : " + rs.shootGap.ToString();
-        
-        blockGap.text = "格挡时间间隔 : " + rs.blockGap.ToString();
-        
-        perfectBlockLast.text = "完美格挡持续时间 : " + rs.perfectBlockLast.ToString();
-        
-        moveSpeed.text = "移动速度 : " + rs.moveSpeed.ToString();
-        
-        bulletSpeed.text = "子弹速度 : " + rs.shootSpeed.ToString();
-
     }
 }

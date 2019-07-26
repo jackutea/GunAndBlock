@@ -109,7 +109,7 @@ class CuteUDPEvent : MonoBehaviour {
 
         int modeCode = int.Parse(dataString);
 
-        PlayerDataScript.ROLE_STATE.inComparingMode = modeCode;
+        PlayerDataScript.ROLE_STATE.waitMode = modeCode;
 
         showAlertWindow("正在匹配中"); // TODO ： 换成其他显示方式
 
@@ -118,7 +118,7 @@ class CuteUDPEvent : MonoBehaviour {
     // 取消匹配回传
     public static void onCompareCancel(string dataString) {
 
-        PlayerDataScript.ROLE_STATE.inComparingMode = -1;
+        PlayerDataScript.ROLE_STATE.waitMode = -1;
 
     }
 
@@ -141,111 +141,6 @@ class CuteUDPEvent : MonoBehaviour {
 
     }
 
-    // 其他玩家移动
-    public static void onMove(string dataString) {
-
-        MoveInfo moveInfo = JsonUtility.FromJson<MoveInfo>(dataString);
-
-        string targetSid = moveInfo.d;
-
-        PlayerDataScript.FIELD_INFO.sidJson[targetSid].vecArray = moveInfo.v;
-
-        FieldScript.Move(targetSid, moveInfo.v);
-        
-    }
-
-    // 其他玩家取消移动
-    // dataString = 取消移动的玩家 sid 
-    public static void onCancelMove(string dataString) {
-
-        string targetSid = dataString;
-
-        PlayerDataScript.FIELD_INFO.sidJson[targetSid].isMoving = false;
-
-        FieldScript.CancelMove(targetSid);
-    }
-
-    // 其他玩家格挡
-    public static void onBlock(string dataString) {
-
-        string targetSid = dataString;
-
-        FieldScript.Block(targetSid);
-
-    }
-
-    // 其他玩家取消格挡
-    public static void onCancelBlock(string dataString) {
-
-        string targetSid = dataString;
-
-        FieldScript.CancelBlock(targetSid);
-
-    }
-
-    // 其他玩家完美格挡
-    public static void onPerfectBlock(string dataString) {
-
-        string targetSid = dataString;
-
-        FieldScript.PerfectBlock(targetSid);
-
-    }
-
-    // 其他玩家取消完美格挡
-    public static void onCancelPerfectBlock(string dataString) {
-
-        string targetSid = dataString;
-
-        FieldScript.CancelPerfectBlock(targetSid);
-
-    }
-
-    // 其他玩家射击
-    public static void onShoot(string dataString) {
-
-        BulletInfo bulletInfo = JsonConvert.DeserializeObject<BulletInfo>(dataString);
-
-        FieldScript.Shoot(bulletInfo);
-
-    }
-
-    // 其他玩家完美格挡了子弹
-    public static void onPerfectBlockBullet(string dataString) {
-
-        BulletInfo bulletInfo = JsonConvert.DeserializeObject<BulletInfo>(dataString);
-
-        FieldScript.PerfectBlockBullet(bulletInfo);
-        
-    }
-
-    // 其他玩家普通格挡了子弹
-    public static void onBlockBullet(string dataString) {
-
-        BulletInfo bulletInfo = JsonConvert.DeserializeObject<BulletInfo>(dataString);
-
-        FieldScript.BlockBullet(bulletInfo);
-        
-    }
-
-    // 其他玩家被子弹直接击中
-    public static void onBeAttacked(string dataString) {
-
-        BulletInfo bulletInfo = JsonConvert.DeserializeObject<BulletInfo>(dataString);
-
-        FieldScript.BeAttacked(bulletInfo);
-        
-    }
-
-    // 其他玩家dead
-    // dataString = sid
-    public static void onDead(string dataString) {
-
-        string sid = dataString;
-
-        FieldScript.Dead(sid);
-
-    }
 
     // TODO 退出登录
     // public static

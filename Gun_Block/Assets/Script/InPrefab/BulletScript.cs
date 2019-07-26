@@ -7,10 +7,8 @@ using UnityEngine;
 public class BulletScript : MonoBehaviour {
 
     public RectTransform battlePanelRect;
-    public BulletInfo bulletInfo;
-    // public float shootSpeed;
-    // public float direct = 1;
-    // public float dmg;
+    public BulletSkill bulletInfo;
+    public sbyte direct;
 
     void Awake() {
 
@@ -36,7 +34,7 @@ public class BulletScript : MonoBehaviour {
 
     void onFlying() {
 
-        gameObject.transform.Translate(Vector3.right * bulletInfo.direct * bulletInfo.shootSpeed * Time.deltaTime);
+        gameObject.transform.Translate(Vector3.right * direct * bulletInfo.flySpeed * Time.deltaTime);
 
     }
 

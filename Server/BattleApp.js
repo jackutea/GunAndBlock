@@ -12,11 +12,23 @@ class BattleApp extends event {
 
         this.rds = Redis.createClient(redisPort, redisIp);
 
+        this.delayTime = 20;
+
         this.initClusterListener();
 
         this.initBattleClusterListener();
 
         this.FieldJson = {};
+
+        setInterval(() => {
+
+            if (this.delayTime > 0) {
+
+                this.delayTime -= 1;
+
+            }
+            
+        }, 1);
 
     }
 
@@ -56,13 +68,17 @@ class BattleApp extends event {
 
         this.on("CancelMove", (dataString, sid) => { this.requestSidJson(dataString, sid, "CancelMove"); }); // 玩家取消移动
 
-        this.on("Block", (dataString, sid) => { this.requestSidJson(dataString, sid, "Block"); }); // 玩家格挡
+        this.on("RedBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "Block"); }); // 玩家格挡
+        this.on("BlueBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "Block"); }); // 玩家格挡
 
-        this.on("CancelBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "CancelBlock"); }); // 玩家取消格挡
+        this.on("CancelRedBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "CancelRedBlock"); }); // 玩家取消格挡
+        this.on("CancelBlueBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "CancelBlueBlock"); }); // 玩家取消格挡
 
-        this.on("PerfectBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "PerfectBlock"); }); // 玩家完美格挡
+        this.on("RedPerfectBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "RedPerfectBlock"); }); // 玩家完美格挡
+        this.on("BluePerfectBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "BluePerfectBlock"); }); // 玩家完美格挡
 
-        this.on("CancelPerfectBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "CancelPerfectBlock"); }); // 玩家取消完美格挡
+        this.on("CancelRedPerfectBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "CancelRedPerfectBlock"); }); // 玩家取消完美格挡
+        this.on("CancelBluePerfectBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "CancelBluePerfectBlock"); }); // 玩家取消完美格挡
 
         this.on("Shoot", this.shoot); // 玩家射击
 
@@ -175,13 +191,16 @@ class BattleApp extends event {
 
             // console.log("BattleApp move :", dataString);
 
-            this.getRedisSidJson(sid, (sidJson) => {
+            if (this.delayTime <= 0) {
 
-                let sidArray = Object.keys(sidJson);
+                this.getRedisSidJson(sid, (sidJson) => {
 
-                process.send({ eventName: "Move", dataString : {data: dataString, sidArray: sidArray}, sid: sid });
-
-            })
+                    let sidArray = Object.keys(sidJson);
+    
+                    process.send({ eventName: "Move", dataString : {data: dataString, sidArray: sidArray}, sid: sid });
+    
+                })
+            }
         })
     }
 

@@ -203,5 +203,77 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 3409678404839005019, guid: fecba1133e0db9440857270750d85d2c,
         type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: blueBullet
+      value: 
+      objectReference: {fileID: 6261646339442924117, guid: eb2c9f0e842c04544be99c3d321cfc39,
+        type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: redBullet
+      value: 
+      objectReference: {fileID: 1842336864064384693, guid: f8e7fe026560d8245bf4d12941d45176,
+        type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: blockWall
+      value: 
+      objectReference: {fileID: 5583520678043764147, guid: 16cda58b93c3a5f44bf2b3395cfce862,
+        type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: fastBullet
+      value: 
+      objectReference: {fileID: 1842336864064384693, guid: f8e7fe026560d8245bf4d12941d45176,
+        type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: normalBullet
+      value: 
+      objectReference: {fileID: 4054018534475863875, guid: 3a7fba4035b74424c82173581d86c34c,
+        type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: rayLight
+      value: 
+      objectReference: {fileID: 3008399389824553986, guid: ef3ebe075f9d27c4e9b39a5f1b83cd08,
+        type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: shadow
+      value: 
+      objectReference: {fileID: 6002749450514859080, guid: 228183ac9a3351542b2f6be45adac6b9,
+        type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: shield
+      value: 
+      objectReference: {fileID: 2936473135595003590, guid: ccc56ed04ec566c4fb70286946a8a7a5,
+        type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: slowBullet
+      value: 
+      objectReference: {fileID: 6261646339442924117, guid: eb2c9f0e842c04544be99c3d321cfc39,
+        type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: tower
+      value: 
+      objectReference: {fileID: 222708450004926233, guid: b257ada2c1f1c0f4580369485d2bdebc,
+        type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: middleWall
+      value: 
+      objectReference: {fileID: 701744086177370996, guid: 1f49c32869cc9f74396136d5cd71482d,
+        type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: road
+      value: 
+      objectReference: {fileID: 1571004295695182476, guid: 60b9ab4e621d9b043b3c08c71377d20f,
+        type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bced0211b2526c142be05bcc250500d4, type: 3}

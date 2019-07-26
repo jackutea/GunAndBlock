@@ -65,7 +65,6 @@
      <Compile Include="Assets\Script\CuteUDPManager.cs" />
      <Compile Include="Assets\Script\Datas\PlayerDataScript.cs" />
      <Compile Include="Assets\Script\Datas\ServerDataScript.cs" />
-     <Compile Include="Assets\Script\Factory\BulletInfo.cs" />
      <Compile Include="Assets\Script\Factory\CreateRoleSendInfo.cs" />
      <Compile Include="Assets\Script\Factory\FieldInfo.cs" />
      <Compile Include="Assets\Script\Factory\LoginRecvInfo.cs" />
@@ -74,6 +73,8 @@
      <Compile Include="Assets\Script\Factory\RoleState.cs" />
      <Compile Include="Assets\Script\Factory\RoomRecvInfo.cs" />
      <Compile Include="Assets\Script\Factory\ServerRecvInfo.cs" />
+     <Compile Include="Assets\Script\Factory\Skill\BuffSkill.cs" />
+     <Compile Include="Assets\Script\Factory\Skill\BulletSkill.cs" />
      <Compile Include="Assets\Script\Factory\UserSendInfo.cs" />
      <Compile Include="Assets\Script\InPrefab\BulletScript.cs" />
      <Compile Include="Assets\Script\InPrefab\OneRolePanelScript.cs" />
@@ -84,6 +85,7 @@
      <Compile Include="Assets\Script\SceneScript\HomeScript.cs" />
      <Compile Include="Assets\Script\SceneScript\LoginScript.cs" />
      <Compile Include="Assets\Script\SceneScript\RoleListScript.cs" />
+     <None Include="Assets\Script\lib\Newtonsoft.Json.xml" />
  <Reference Include="Unity.PackageManagerUI.Editor">
  <HintPath>D:/GunAndBlock/Gun_Block/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
  </Reference>

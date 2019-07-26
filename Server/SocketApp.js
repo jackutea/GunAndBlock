@@ -23,6 +23,8 @@ class SocketApp extends event {
 
         this.rds = Redis.createClient(redisPort, "localhost");
 
+        this.delayTime = 25;
+
         this.initClusterListener();
 
         this.initCuteUDPListener();
@@ -114,13 +116,17 @@ class SocketApp extends event {
 
         this.cuteUDP.on("CancelMove", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CancelMove"); }); 
 
-        this.cuteUDP.on("Block", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "Block"); }); 
+        this.cuteUDP.on("RedBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "RedBlock"); }); 
+        this.cuteUDP.on("BlueBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "BlueBlock"); }); 
 
-        this.cuteUDP.on("CancelBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CancelBlock"); }); 
+        this.cuteUDP.on("CancelRedBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CancelRedBlock"); }); 
+        this.cuteUDP.on("CancelBlueBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CancelBlueBlock"); }); 
 
-        this.cuteUDP.on("PerfectBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "PerfectBlock"); }); 
+        this.cuteUDP.on("RedPerfectBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "RedPerfectBlock"); }); 
+        this.cuteUDP.on("BluePerfectBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "BluePerfectBlock"); }); 
 
-        this.cuteUDP.on("CancelPerfectBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CancelPerfectBlock"); }); 
+        this.cuteUDP.on("CancelRedPerfectBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CancelRedPerfectBlock"); }); 
+        this.cuteUDP.on("CancelBluePerfectBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CancelBluePerfectBlock"); }); 
 
         this.cuteUDP.on("Shoot", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "Shoot"); }); 
 
@@ -191,13 +197,17 @@ class SocketApp extends event {
 
         this.on("CancelMove", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CancelMove"); });
 
-        this.on("Block", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "Block"); });
+        this.on("RedBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "RedBlock"); });
+        this.on("BlueBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "BlueBlock"); });
 
-        this.on("CancelBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CancelBlock"); });
+        this.on("CancelRedBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CancelRedBlock"); });
+        this.on("CancelBlueBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CancelBlueBlock"); });
 
-        this.on("PerfectBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "PerfectBlock"); });
+        this.on("RedPerfectBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "RedPerfectBlock"); });
+        this.on("BluePerfectBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "BluePerfectBlock"); });
 
-        this.on("CancelPerfectBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CancelPerfectBlock"); });
+        this.on("CancelRedPerfectBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CancelRedPerfectBlock"); });
+        this.on("CancelBluePerfectBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CancelBluePerfectBlock"); });
 
         this.on("Shoot", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "Shoot"); });
 
@@ -214,7 +224,7 @@ class SocketApp extends event {
     // 进程请求
     clusterReq(clusterName, dataString, sid, eventName) {
 
-        process.nextTick(() => {
+        // process.nextTick(() => {
 
             switch(clusterName) {
 
@@ -230,7 +240,7 @@ class SocketApp extends event {
 
             console.log(sid, "向", clusterName, "请求处理", eventName);
 
-        })
+        // })
     }
 
     // 网络回应
@@ -255,7 +265,9 @@ class SocketApp extends event {
             let sidArray = dataJson.sidArray;
 
             this.cuteUDP.emitBrocast(eventName, data, sidArray, sid);
-                            
+
+            console.log("向", sid, "回传", eventName);
+                
         })
     }
 }
