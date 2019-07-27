@@ -21,9 +21,6 @@ public class LoginScript : MonoBehaviour {
     public Button confirmRegisterBtn;
     public Button backLoginBtn;
 
-    public float i;
-    
-
     void Awake() {
 
         if (GameObject.FindWithTag("MainScript") == null) {
@@ -117,14 +114,6 @@ public class LoginScript : MonoBehaviour {
 
     void Update() {
 
-        i += Time.deltaTime;
 
-        if (i > 50f) {
-
-            Debug.Log("true");
-
-            i = 0;
-        }
-        
     }
 }

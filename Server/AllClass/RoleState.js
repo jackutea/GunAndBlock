@@ -23,10 +23,12 @@ class RoleState {
         this.life = 5.0;
         this.blockLifeOrigin = 3.0;
         this.blockLife = 3.0;
+        this.isBlocking = false;
         this.towerLifeOrigin = 50.0;
         this.towerLife = 50.0;
 
         // 技能
+        this.currentSpell = "";
         this.blockSkill = new BuffSkill(1);
         this.normalBullet = new BulletSkill(2);
         this.slowBullet = new BulletSkill(3);

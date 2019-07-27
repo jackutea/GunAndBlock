@@ -1148,6 +1148,9 @@ MonoBehaviour:
   cameraObject: {fileID: 1735954066}
   mainCamera: {fileID: 305242812}
   battlePanel: {fileID: 1591218106}
+  fieldInfo:
+    fieldId: 0
+    modeCode: 
   HUDPanel: {fileID: 25637756}
   skill1: {fileID: 1539982698}
   skill2: {fileID: 1463300792}
@@ -1157,9 +1160,7 @@ MonoBehaviour:
   skill6: {fileID: 911275477}
   skill7: {fileID: 85808113}
   skill8: {fileID: 1338526647}
-  fieldInfo:
-    fieldId: 0
-    modeCode: 
+  skillCommad: {fileID: 358018818}
 --- !u!1 &582453942
 GameObject:
   m_ObjectHideFlags: 0
@@ -2589,6 +2590,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Color.b
       value: 0.07450981
+      objectReference: {fileID: 0}
+    - target: {fileID: 6014858614999617340, guid: fb0cade286867574aa690d26575e4e62,
+        type: 3}
+      propertyPath: m_Color.a
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6014858613672556885, guid: fb0cade286867574aa690d26575e4e62,
         type: 3}

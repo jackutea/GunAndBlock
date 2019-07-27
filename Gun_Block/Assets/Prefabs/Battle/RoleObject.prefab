@@ -439,7 +439,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 30}
+  m_AnchoredPosition: {x: 0, y: 20}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!223 &4191102294477608738
@@ -601,7 +601,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5671127918034768579}
   m_LocalRotation: {x: 0, y: 0, z: 0.7071068, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -10, z: 0}
   m_LocalScale: {x: 100, y: 100, z: 100}
   m_Children: []
   m_Father: {fileID: 8833112024891246093}
@@ -743,10 +743,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 984757e240969ab4398e44350c9cda13, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  battlePanel: {fileID: 0}
-  battlePanelRect: {fileID: 0}
-  roleInstance: {fileID: 0}
-  roleSpriteRenderer: {fileID: 0}
   roleState:
     sid: 
     username: 
@@ -847,8 +843,6 @@ MonoBehaviour:
       buffLast: 0
     isLeftAlly: 1
     isDead: 0
-  roleCollider: {fileID: 0}
-  roleAni: {fileID: 0}
   isMe: 0
   nameBar: {fileID: 1087360447858084804}
   hpSlider: {fileID: 7330799094780262329}
@@ -865,7 +859,7 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 2
   m_Size: {x: 40, y: 40, z: 0}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: 0, y: -10, z: 0}
 --- !u!95 &878266440022364485
 Animator:
   serializedVersion: 3

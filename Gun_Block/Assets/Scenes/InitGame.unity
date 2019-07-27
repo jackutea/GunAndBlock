@@ -275,5 +275,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1571004295695182476, guid: 60b9ab4e621d9b043b3c08c71377d20f,
         type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: roadLine
+      value: 
+      objectReference: {fileID: 7829029320782170531, guid: edde130297d37824db14912767e330a8,
+        type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bced0211b2526c142be05bcc250500d4, type: 3}

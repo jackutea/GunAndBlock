@@ -87,7 +87,7 @@ class CompareApp extends event {
 
                         }
 
-                        instance.emit("LoadField", sidJson);
+                        instance.emit("LoadField", sidJson, modeCode);
 
                     } else {
 
@@ -110,7 +110,7 @@ class CompareApp extends event {
 
                         }
 
-                        instance.emit("LoadField", sidJson);
+                        instance.emit("LoadField", sidJson, modeCode);
 
                     }
 
@@ -129,7 +129,7 @@ class CompareApp extends event {
 
                         }
 
-                        instance.emit("LoadField", sidJson);
+                        instance.emit("LoadField", sidJson, modeCode);
 
                     }
                 }
@@ -219,7 +219,7 @@ class CompareApp extends event {
 
                         searchLevelIndex = level + 10;
 
-                    }
+                    } 
 
                     searchList[searchLevelIndex][modeCode].push(sid);
 
@@ -231,7 +231,7 @@ class CompareApp extends event {
     }
 
     // 载入战场
-    loadField(sidJson, i) {
+    loadField(sidJson, modeCode, i) {
 
         if (i === undefined) i = 0;
 
@@ -245,23 +245,31 @@ class CompareApp extends event {
 
                 let username = data1;
 
+                if (err1) throw err1;
+
                 this.rds.hget(username, "roleState", (err2, data2) => {
 
-                    let roleState = JSON.parse(data2);
-
-                    roleState.sid = sid;
-
-                    if (i < keys.length / 2) {
-
-                        roleState.isLeftAlly = true;
-
-                    } else {
-
-                        roleState.isLeftAlly = false;
-
-                    }
+                    if (err2) throw err2;
 
                     this.rds.hlen("FieldJson", (err3, data3) => {
+
+                        if (err3) throw err3;
+
+                        let roleState = JSON.parse(data2);
+
+                        roleState.sid = sid;
+
+                        roleState.waitMode = modeCode;
+
+                        if (i < keys.length / 2) {
+
+                            roleState.isLeftAlly = true;
+
+                        } else {
+
+                            roleState.isLeftAlly = false;
+
+                        }
 
                         roleState.inFieldId = data3;
 
@@ -271,9 +279,9 @@ class CompareApp extends event {
 
                         sidJson[sid] = roleState;
 
-                        i += 1;
+                        i -= -1;
 
-                        this.loadField(sidJson, i);
+                        this.loadField(sidJson, modeCode, i);
 
                     });
                 });
@@ -289,13 +297,13 @@ class CompareApp extends event {
 
                 if (roleState.inFieldId < 0) {
 
-                    fieldInfo = new FieldInfo(0, roleState.inComparingMode, sidJson);
+                    fieldInfo = new FieldInfo(0, roleState.waitMode, sidJson);
 
                     res(fieldInfo);
 
                 } else {
 
-                    fieldInfo = new FieldInfo(roleState.inFieldId, roleState.inComparingMode, sidJson);
+                    fieldInfo = new FieldInfo(roleState.inFieldId, roleState.waitMode, sidJson);
 
                     res(fieldInfo);
 

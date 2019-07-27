@@ -24,10 +24,12 @@ public class RoleState{
     public float life = 5;
     public float blockLifeOrigin = 3;
     public float blockLife = 3;
+    public bool isBlocking = false;
     public float towerLifeOrigin = 50;
     public float towerLife = 50;
     
     // ———— 技能 ————
+    public string currentSpell = ""; // 技能命令
     public BuffSkill blockSkill; // 格挡 AAA
     public BulletSkill normalBullet; // 普攻
     public BulletSkill slowBullet; // 慢攻
