@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8924205768792694404}
   - component: {fileID: 565364039744596783}
+  - component: {fileID: 4217896400914797323}
   m_Layer: 0
   m_Name: Shield
   m_TagString: Untagged
@@ -79,3 +80,31 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &4217896400914797323
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2936473135595003590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d100469c00d30f84b8398e920b8105b8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skillState:
+    id: 0
+    spell: 
+    isBuff: 0
+    flySpeedOrigin: 0
+    flySpeed: 0
+    dmgOrigin: 0
+    dmg: 0
+    singOrigin: 0
+    sing: 0
+    cdOrigin: 0
+    cd: 0
+    buffLastOrigin: 0
+    buffLast: 0
+  direct: 0
+  roleObj: {fileID: 0}

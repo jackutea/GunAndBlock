@@ -41,6 +41,8 @@ public class CuteUDPManager : MonoBehaviour {
         PlayerDataScript.sid = CuteUDP.socketId;
 
         initPrivateVoid();
+
+        ConfigCollection.initConf();
     }
 
     void Update() {
@@ -60,24 +62,6 @@ public class CuteUDPManager : MonoBehaviour {
             act.Invoke(dataString);
 
         }
-    }
-
-    void switchPort() {
-
-        if (currentPort == serverHallPort) {
-
-            currentPort = serverBattlePort;
-
-        } else {
-
-            currentPort = serverHallPort;
-
-        }
-
-        cuteUDP.remotePort = currentPort;
-
-        cuteUDP.emitTo("SwitchPort", "", serverIp, currentPort);
-
     }
 
     void initPrivateVoid() {

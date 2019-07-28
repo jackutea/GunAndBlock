@@ -17,14 +17,8 @@ public class FieldScript : MonoBehaviour {
 
     // UI
     public GameObject HUDPanel;
-    public Slider skill1;
-    public Slider skill2;
-    public Slider skill3;
-    public Slider skill4;
-    public Slider skill5;
-    public Slider skill6;
-    public Slider skill7;
-    public Slider skill8;
+    public GameObject skillPanel;
+    Dictionary<int, Slider> skillSliderDic;
     public Text skillCommad;
 
     void Awake() {
@@ -41,6 +35,8 @@ public class FieldScript : MonoBehaviour {
     void Start() {
 
         initBattle();
+
+        initSlider();
 
     }
 
@@ -66,6 +62,41 @@ public class FieldScript : MonoBehaviour {
 
     }
 
+    void initSlider() {
+
+        skillSliderDic = new Dictionary<int, Slider>();
+
+        if (PlayerDataScript.ROLE_STATE == null) return;
+
+        RoleState rs = PlayerDataScript.ROLE_STATE;
+
+        float xGap = 90;
+
+        for (int i = 0; i < rs.skillList.Length; i += 1) {
+
+            int skillIndex = i;
+
+            Skill skill = rs.skillList[skillIndex];
+
+            skillSliderDic.Add(skillIndex, Instantiate(PrefabCollection.instance.skillSlider, skillPanel.transform));
+
+            Slider skillSlider = skillSliderDic[skillIndex];
+
+            skillSlider.maxValue = skill.cdOrigin;
+
+            skillSlider.minValue = 0;
+
+            Text sliderName = skillSlider.GetComponentInChildren<Text>();
+
+            sliderName.text = ConfigCollection.SkillSpell[skillIndex];
+
+            Vector2 sliderPo = skillSlider.transform.localPosition;
+
+            skillSlider.transform.localPosition = new Vector2(sliderPo.x + xGap * i, sliderPo.y);
+
+        }
+    }
+
     // 加载战斗
     void initBattle() {
 
@@ -74,8 +105,6 @@ public class FieldScript : MonoBehaviour {
         fieldInfo = PlayerDataScript.FIELD_INFO;
 
         string modeCode = fieldInfo.modeCode;
-
-        Debug.Log(fieldInfo.modeCode);
 
         int marchRoadNum = 0;
 
@@ -142,6 +171,8 @@ public class FieldScript : MonoBehaviour {
         // 加载角色属性
         RoleScript roleScript = roleObj.GetComponent<RoleScript>();
 
+        roleScript.roleState = roleState;
+
         if (roleState.username == PlayerDataScript.USER_NAME) {
 
             roleScript.isMe = true;
@@ -163,9 +194,9 @@ public class FieldScript : MonoBehaviour {
         if (isRotate) roleRender.flipY = isRotate;
 
         // 生成塔
-        GameObject towerObj = Instantiate(PrefabCollection.instance.tower, transform.parent.transform);
+        GameObject towerObj = Instantiate(PrefabCollection.instance.tower, roadLine.transform);
 
-        towerObj.transform.localPosition = (roleState.isLeftAlly) ? new Vector2(rolePo.x - 120, rolePo.y) : new Vector2(rolePo.x + 120, rolePo.y);
+        towerObj.transform.localPosition = (roleState.isLeftAlly) ? new Vector2(roleObj.transform.localPosition.x - 120, rolePo.y) : new Vector2(roleObj.transform.localPosition.x + 120, rolePo.y);
 
     }
 
@@ -176,39 +207,19 @@ public class FieldScript : MonoBehaviour {
 
         RoleState rs = PlayerDataScript.ROLE_STATE;
 
-        skill1 = skillCDCount(skill1, rs.blockSkill);
+        if (rs.skillList.Length <= 0) return;
 
-        skill2 = skillCDCount(skill2, null, rs.normalBullet);
+        for (int i = 0; i < rs.skillList.Length; i += 1) {
 
-        skill3 = skillCDCount(skill3, null, rs.slowBullet);
-        
-        skill4 = skillCDCount(skill4, null, rs.fastBullet);
-        
-        skill5 = skillCDCount(skill5, null, rs.rayBullet);
-        
-        skill6 = skillCDCount(skill6, rs.blockWall);
-        
-        skill7 = skillCDCount(skill7, rs.shadow);
-        
-        skill8 = skillCDCount(skill8, rs.shield);
+            int skillIndex = i;
+
+            Skill skill = rs.skillList[skillIndex];
+
+            skillSliderDic[skillIndex].value = skill.cd;
+
+        }
 
         skillCommad.text = rs.currentSpell;
 
-    }
-
-    Slider skillCDCount(Slider slider, BuffSkill buffSkill = null, BulletSkill bulletSkill = null) {
-
-        float cdOrigin = (buffSkill == null) ? bulletSkill.cdOrigin : buffSkill.cdOrigin;
-
-        float cd = (buffSkill == null) ? bulletSkill.cd : buffSkill.cd;
-
-        slider.maxValue = cdOrigin;
-
-        slider.minValue = 0;
-
-        slider.value = cd;
-
-        return slider;
-        
     }
 }

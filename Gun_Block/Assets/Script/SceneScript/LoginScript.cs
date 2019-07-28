@@ -30,8 +30,8 @@ public class LoginScript : MonoBehaviour {
             return;
 
         }
-
     }
+    
     void Start() {
 
         // 默认隐藏注册页

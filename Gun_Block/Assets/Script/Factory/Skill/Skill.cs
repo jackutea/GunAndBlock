@@ -1,10 +1,11 @@
 using System;
 
-// [Serializable] 
-public class BulletSkill : SkillBase {
+[Serializable]
+public class Skill {
 
-    public byte id;
+    public int id;
     public string spell;
+    public bool isBuff;
     public float flySpeedOrigin;
     public float flySpeed;
     public float dmgOrigin;
@@ -13,10 +14,11 @@ public class BulletSkill : SkillBase {
     public float sing;
     public float cdOrigin;
     public float cd;
+    public float buffLastOrigin;
+    public float buffLast;
+    
+    public bool isImmune;
+    public bool isReflect;
+    public int addBlockCount;
 
-    public override void reduceCD(float deltaTime) {
-
-        if (cd > 0) this.cd -= deltaTime;
-
-    }
 }

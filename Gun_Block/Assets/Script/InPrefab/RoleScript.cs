@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,27 +13,26 @@ public class RoleScript : MonoBehaviour {
     SpriteRenderer roleSpriteRenderer;
     Animator roleAni;
 
-    public bool isMe = false;
+    public bool isMe;
 
     public Text nameBar;
     public Slider hpSlider;
     public Slider blockSlider;
+    public Slider singSlider;
 
-    List<string> spellList;
+    float singTime = 0;
+
+    public RoleState roleState = null;
+
+    Dictionary<string, int> spellToSkillDic;
 
     void Awake() {
+
+        isMe = false;
 
     }
 
     void Start() {
-
-        if (PlayerDataScript.ROLE_STATE == null) {
-
-            // 重新请求加载角色数据
-
-            return;
-
-        }
 
         roleCollider = GetComponent<Collider>();
 
@@ -40,19 +40,11 @@ public class RoleScript : MonoBehaviour {
 
         roleAni = GetComponent<Animator>();
 
-        nameBar.text = PlayerDataScript.ROLE_STATE.roleName;
+        nameBar.text = roleState.roleName;
 
-        PlayerDataScript.ROLE_STATE.username = PlayerDataScript.USER_NAME;
+        roleState.username = PlayerDataScript.USER_NAME;
 
-        spellList = new List<string>();
-        spellList.Add("AAA");
-        spellList.Add("AAB");
-        spellList.Add("ABB");
-        spellList.Add("ABA");
-        spellList.Add("BBB");
-        spellList.Add("BAB");
-        spellList.Add("BAA");
-        spellList.Add("BBA");
+        initSpellToSkill();
 
     }
 
@@ -64,7 +56,9 @@ public class RoleScript : MonoBehaviour {
 
         if (!isMe) return;
 
-        if (!PlayerDataScript.ROLE_STATE.isDead) {
+        PlayerDataScript.ROLE_STATE = roleState;
+
+        if (!roleState.isDead) {
 
             inputKeyCheck();
 
@@ -75,88 +69,184 @@ public class RoleScript : MonoBehaviour {
 
     void FixedUpdate() {
 
+        if (!isMe) return;
+
         timeReduce(); // CD与BUFF持续时间计算
 
     }
 
-    // 按键监测 Update
+    // (通用) 初始化技能键值对
+    void initSpellToSkill() {
+
+        spellToSkillDic = new Dictionary<string, int>();
+
+        if (ConfigCollection.SkillSpell == null) return;
+
+        foreach (var kv in ConfigCollection.SkillSpell) {
+
+            int skillEnum = kv.Key;
+
+            string spell = kv.Value;
+            
+            spellToSkillDic.Add(spell, skillEnum);
+
+        }
+    }
+
+    // (个人角色) 按键监测 Update
     void inputKeyCheck() {
 
-        if (PlayerDataScript.ROLE_STATE == null) return;
+        if (!isMe) return;
 
-        if (PlayerDataScript.ROLE_STATE.currentSpell.Length < 3) {
+        if (roleState == null) return;
+
+        if (roleState.currentSpell.Length < 3) {
 
             if (Input.GetKeyDown(KeyCode.J)) {
 
-                PlayerDataScript.ROLE_STATE.currentSpell += "A";
+                roleState.currentSpell += "A";
 
             } else if (Input.GetKeyDown(KeyCode.K)) {
 
-                PlayerDataScript.ROLE_STATE.currentSpell += "B";
+                roleState.currentSpell += "B";
 
             } else if (Input.GetKeyDown(KeyCode.L)) {
 
-                PlayerDataScript.ROLE_STATE.currentSpell = "";
+                roleState.currentSpell = "";
 
             }
         }
     }
 
-    // 技能检测
+    // (个人角色) 技能检测
     void skillCastCheck() {
 
-        if (PlayerDataScript.ROLE_STATE == null) return;
+        if (!isMe) return;
 
-        if (spellList.Count < 8 || spellList == null) return;
+        if (roleState == null) return;
 
-        if (spellList.Contains(PlayerDataScript.ROLE_STATE.currentSpell)) {
+        string currentSpell = roleState.currentSpell;
 
-            skillCast(PlayerDataScript.ROLE_STATE.currentSpell);
-            
+        if (spellToSkillDic.ContainsKey(currentSpell)) {
+
+            int skillEnum = (int)spellToSkillDic[currentSpell];
+
+            Skill skill = roleState.skillList[skillEnum];
+
+            if (roleState.isSinging == false) {
+
+                if (roleState.skillList[skillEnum].cd > 0) {
+
+                    // Debug.Log("CD中");
+
+                    roleState.currentSpell = "";
+
+                    return;
+
+                }
+
+                roleState.isSinging = true;
+
+                singTime = roleState.skillList[skillEnum].singOrigin;
+
+                singSlider.maxValue = roleState.skillList[skillEnum].singOrigin;
+
+                singSlider.value = roleState.skillList[skillEnum].singOrigin;
+
+                if (singSlider.maxValue > 0) {
+
+                    singSlider.gameObject.SetActive(true);
+                    
+                }
+
+            } else {
+
+                if (singTime > 0) {
+
+                    singTime -= Time.deltaTime;
+
+                } else {
+
+                    roleState.isSinging = false;
+
+                    roleState.skillList[skillEnum].cd = roleState.skillList[skillEnum].cdOrigin;
+
+                    roleState.skillList[skillEnum].buffLast = roleState.skillList[skillEnum].buffLastOrigin;
+
+                    GameObject skillObj = Instantiate(PrefabCollection.skillPrefabDic[skillEnum], transform.position, transform.rotation, transform.parent.transform);
+
+                    SkillScript skillScript = skillObj.GetComponent<SkillScript>();
+
+                    skillScript.sid = roleState.sid;
+
+                    skillScript.skillEnum = skillEnum;
+
+                    roleState.currentSpell = "";
+
+                }
+            }
+
+        } else {
+
+            roleState.isSinging = false;
+
+            singTime = 0;
+
         }
     }
 
-    // 技能施放
+    // (个人角色) 技能施放
     void skillCast(string spell) {
+
+        if (!isMe) return;
+
+        if (roleState == null) return;
 
         Debug.Log("施放了" + spell);
 
-        PlayerDataScript.ROLE_STATE.currentSpell = "";
+        roleState.currentSpell = "";
 
     }
 
-    写技能
-
-    // CD 计算
+    // (个人角色) CD 计算
     void timeReduce() {
 
+        if (!isMe) return;
+
         // Skill CD
-        if (PlayerDataScript.ROLE_STATE == null) return;
+        if (roleState == null) return;
 
-        PlayerDataScript.ROLE_STATE.blockSkill.reduceCD(Time.deltaTime);
+        if (roleState.skillList == null) return;
 
-        PlayerDataScript.ROLE_STATE.normalBullet.reduceCD(Time.deltaTime);
+        if (roleState.skillList.Length <= 0) return;
 
-        PlayerDataScript.ROLE_STATE.slowBullet.reduceCD(Time.deltaTime);
+        for (int i = 0; i < roleState.skillList.Length; i += 1) {
 
-        PlayerDataScript.ROLE_STATE.fastBullet.reduceCD(Time.deltaTime);
+            int skillEnum = i;
 
-        PlayerDataScript.ROLE_STATE.rayBullet.reduceCD(Time.deltaTime);
+            Skill skill = roleState.skillList[skillEnum];
 
-        PlayerDataScript.ROLE_STATE.blockWall.reduceCD(Time.deltaTime);
+            if (skill.cd > 0) {
 
-        PlayerDataScript.ROLE_STATE.shadow.reduceCD(Time.deltaTime);
+                roleState.skillList[skillEnum].cd -= Time.deltaTime;
 
-        PlayerDataScript.ROLE_STATE.shield.reduceCD(Time.deltaTime);
+            }
 
+            if (skill.buffLast > 0) {
+
+                roleState.skillList[skillEnum].buffLast -= Time.deltaTime;
+
+            }
+        }
     }
 
-    // 生命值 至 盾值 计算
+    // (通用) 生命值 与 盾值 计算
     void barCheck() {
 
-        float fullHp = PlayerDataScript.ROLE_STATE.lifeOrigin;
+        // 血量
+        float fullHp = roleState.lifeOrigin;
 
-        float nowHp = PlayerDataScript.ROLE_STATE.life;
+        float nowHp = roleState.life;
 
         hpSlider.direction = Slider.Direction.LeftToRight;
 
@@ -166,9 +256,10 @@ public class RoleScript : MonoBehaviour {
 
         hpSlider.value = nowHp;
 
-        float fullBlockLife = PlayerDataScript.ROLE_STATE.blockLifeOrigin;
+        // 盾值
+        float fullBlockLife = roleState.blockLifeOrigin;
 
-        float nowBlockLife = PlayerDataScript.ROLE_STATE.blockLife;
+        float nowBlockLife = roleState.blockLife;
 
         blockSlider.direction = Slider.Direction.LeftToRight;
 
@@ -178,12 +269,22 @@ public class RoleScript : MonoBehaviour {
 
         blockSlider.value = nowBlockLife;
 
+        // 吟唱条
+        if (singSlider.value <= 0) {
+
+            singSlider.gameObject.SetActive(false);
+
+        } else {
+
+            singSlider.value = singTime;
+
+        }
     }
 
     // 动画设置
     void aniCheck() {
 
-        if (PlayerDataScript.ROLE_STATE.isDead == false) {
+        if (roleState.isDead == false) {
 
             roleAni.Play("roleStand");
 
@@ -199,7 +300,7 @@ public class RoleScript : MonoBehaviour {
     // 死亡
     public void dead() {
 
-        PlayerDataScript.ROLE_STATE.isDead = true;
+        roleState.isDead = true;
 
         roleSpriteRenderer.sortingOrder = 1;
 
@@ -207,17 +308,17 @@ public class RoleScript : MonoBehaviour {
 
     }
 
-    // 子弹碰撞检测
+    // 技能碰撞检测
     void OnTriggerEnter(Collider col) {
 
-        BulletScript bs = col.gameObject.GetComponent<BulletScript>();
+        SkillScript ss = col.gameObject.GetComponent<SkillScript>();
 
         // 我，是左边，碰到了右边来的子弹
-        if (col.tag == "RightAllyBullet" && PlayerDataScript.ROLE_STATE.isLeftAlly && isMe) {
+        if (col.tag == "RightAllyBullet" && roleState.isLeftAlly && isMe) {
 
 
         // 我，是右边，碰到了左边来的子弹
-        } else if (col.tag == "LeftAllyBullet" && !PlayerDataScript.ROLE_STATE.isLeftAlly && isMe) {
+        } else if (col.tag == "LeftAllyBullet" && !roleState.isLeftAlly && isMe) {
             
         }
     }

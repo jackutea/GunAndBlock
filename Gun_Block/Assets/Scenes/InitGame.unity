@@ -281,5 +281,17 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 7829029320782170531, guid: edde130297d37824db14912767e330a8,
         type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: skillSlider
+      value: 
+      objectReference: {fileID: 7600369118518844225, guid: 1e641d95b62d21047a66774aac68061a,
+        type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: block
+      value: 
+      objectReference: {fileID: 5241023860502246832, guid: cd3920a97bab91548b8c85522ca86a12,
+        type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bced0211b2526c142be05bcc250500d4, type: 3}

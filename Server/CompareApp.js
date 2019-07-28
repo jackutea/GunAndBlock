@@ -2,7 +2,7 @@ var event = require("events");
 var cluster = require("cluster");
 var Redis = require("redis");
 
-var DefaultLevel = require("./GlobalData/Config/DefaultLevel");
+var DefaultLevel = require("./Config/DefaultLevel");
 var FieldInfo = require("./AllClass/FieldInfo");
 
 class CompareApp extends event {

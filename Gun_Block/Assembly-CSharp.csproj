@@ -53,7 +53,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\Script\Collection\ConfigCollection.cs" />
      <Compile Include="Assets\Script\Collection\PrefabCollection.cs" />
+     <Compile Include="Assets\Script\Collection\SkillEnum.cs" />
      <Compile Include="Assets\Script\CuteUDP\BasePacket.cs" />
      <Compile Include="Assets\Script\CuteUDP\CuteUDP.cs" />
      <Compile Include="Assets\Script\CuteUDP\EventEmitter.cs" />
@@ -73,12 +75,12 @@
      <Compile Include="Assets\Script\Factory\RoleState.cs" />
      <Compile Include="Assets\Script\Factory\RoomRecvInfo.cs" />
      <Compile Include="Assets\Script\Factory\ServerRecvInfo.cs" />
-     <Compile Include="Assets\Script\Factory\Skill\BuffSkill.cs" />
-     <Compile Include="Assets\Script\Factory\Skill\BulletSkill.cs" />
+     <Compile Include="Assets\Script\Factory\Skill\Skill.cs" />
      <Compile Include="Assets\Script\Factory\UserSendInfo.cs" />
-     <Compile Include="Assets\Script\InPrefab\BulletScript.cs" />
      <Compile Include="Assets\Script\InPrefab\OneRolePanelScript.cs" />
      <Compile Include="Assets\Script\InPrefab\RoleScript.cs" />
+     <Compile Include="Assets\Script\InPrefab\SkillScript.cs" />
+     <Compile Include="Assets\Script\InPrefab\SpecialSkill\BlockWall.cs" />
      <Compile Include="Assets\Script\SceneScript\ChooseRoomScript.cs" />
      <Compile Include="Assets\Script\SceneScript\ChooseServerScript.cs" />
      <Compile Include="Assets\Script\SceneScript\FieldScript.cs" />

@@ -1,5 +1,4 @@
-var BuffSkill = require("./BuffSkill");
-var BulletSkill = require("./BulletSkill");
+var skillList = require("../Config/SkillList");
 
 class RoleState {
     
@@ -29,18 +28,23 @@ class RoleState {
 
         // 技能
         this.currentSpell = "";
-        this.blockSkill = new BuffSkill(1);
-        this.normalBullet = new BulletSkill(2);
-        this.slowBullet = new BulletSkill(3);
-        this.fastBullet = new BulletSkill(4);
-        this.rayBullet = new BulletSkill(5);
-        this.blockWall = new BuffSkill(6);
-        this.shadow = new BuffSkill(7);
-        this.shield = new BuffSkill(8);
+        this.skillList = skillList;
+        // this.blockSkill = new BuffSkill(1);
+        // this.normalBullet = new BulletSkill(2);
+        // this.slowBullet = new BulletSkill(3);
+        // this.fastBullet = new BulletSkill(4);
+        // this.rayBullet = new BulletSkill(5);
+        // this.blockWall = new BuffSkill(6);
+        // this.shadow = new BuffSkill(7);
+        // this.shield = new BuffSkill(8);
 
         // 状态
         this.isLeftAlly = true;
-        this.isDead = false; 
+        this.isSinging = false;
+        this.isImmune = false;
+        this.isReflect = false;
+        this.blockCount = 0;
+        this.isDead = false;
 
     }
 }
