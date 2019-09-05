@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 8302693730291124262}
   - component: {fileID: 6934030680491496643}
   - component: {fileID: 1114006314325159425}
+  - component: {fileID: 5787291104856143953}
   m_Layer: 0
   m_Name: BlockWall
   m_TagString: Untagged
@@ -26,7 +27,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5583520678043764147}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 60, y: -10, z: 0}
   m_LocalScale: {x: 20, y: 70, z: 50}
   m_Children: []
   m_Father: {fileID: 0}
@@ -92,9 +93,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d100469c00d30f84b8398e920b8105b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skillState:
+  sid: 
+  bid: 
+  direct: 0
+  oppoSid: 
+  skillEnum: 0
+  skill:
     id: 0
     spell: 
+    skillName: 
     isBuff: 0
     flySpeedOrigin: 0
     flySpeed: 0
@@ -106,5 +113,19 @@ MonoBehaviour:
     cd: 0
     buffLastOrigin: 0
     buffLast: 0
-  direct: 0
-  roleObj: {fileID: 0}
+    isImmune: 0
+    isReflect: 0
+    addBlockCount: 0
+--- !u!65 &5787291104856143953
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5583520678043764147}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1, y: 1, z: 0.2}
+  m_Center: {x: 0, y: 0, z: 0}

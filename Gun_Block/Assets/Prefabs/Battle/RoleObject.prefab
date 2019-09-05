@@ -732,8 +732,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 2
-  m_Sprite: {fileID: 21300000, guid: 37b7287169b4f794484567391d6a56c4, type: 3}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Sprite: {fileID: 21300000, guid: f468ab65d00b10d46ba65867ff494f22, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -901,9 +901,9 @@ GameObject:
   - component: {fileID: 6407050005018333271}
   - component: {fileID: 4208489684400535565}
   - component: {fileID: 878266440022364485}
-  m_Layer: 5
+  m_Layer: 0
   m_Name: RoleObject
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -942,10 +942,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isMe: 0
+  oppoSid: 
+  marchIndex: 0
   nameBar: {fileID: 1087360447858084804}
   hpSlider: {fileID: 7330799094780262329}
   blockSlider: {fileID: 1666900369378686757}
   singSlider: {fileID: 2171323753296349249}
+  AButton: {fileID: 0}
+  BButton: {fileID: 0}
   roleState:
     sid: 
     username: 
@@ -984,7 +988,7 @@ BoxCollider:
   m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 40, y: 40, z: 0}
+  m_Size: {x: 40, y: 40, z: 1}
   m_Center: {x: 0, y: -10, z: 0}
 --- !u!95 &878266440022364485
 Animator:

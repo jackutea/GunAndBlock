@@ -5,9 +5,11 @@ TagManager:
   serializedVersion: 2
   tags:
   - MainScript
-  - LeftAllyBullet
-  - RightAllyBullet
   - RoleSiblingsButton
+  - RightSkill
+  - LeftSkill
+  - AButton
+  - BButton
   layers:
   - Default
   - TransparentFX

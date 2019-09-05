@@ -111,7 +111,7 @@ public class ChooseServerScript : MonoBehaviour {
 
             } else {
 
-                CuteUDPManager.cuteUDP.emitServer("ShowRoles", ServerDataScript.choosenServerId.ToString());
+                CuteUDPManager.cuteUDP.emitServer(HallEventEnum.ShowRoles.ToString(), ServerDataScript.choosenServerId.ToString());
 
             }
         });

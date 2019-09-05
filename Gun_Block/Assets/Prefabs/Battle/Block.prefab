@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 5541258770107662966}
   - component: {fileID: 6889357397711133076}
   - component: {fileID: 5385036878267476198}
-  m_Layer: 5
+  m_Layer: 0
   m_Name: Block
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -61,7 +61,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.48776254, g: 0.9150943, b: 0.5827461, a: 0.39215687}
+  m_Color: {r: 0.2007832, g: 0.9056604, b: 0.3624524, a: 1}
   m_RaycastTarget: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -136,9 +136,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d100469c00d30f84b8398e920b8105b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skillState:
+  sid: 
+  bid: 
+  direct: 0
+  oppoSid: 
+  skillEnum: 0
+  skill:
     id: 0
     spell: 
+    skillName: 
     isBuff: 0
     flySpeedOrigin: 0
     flySpeed: 0
@@ -150,5 +156,6 @@ MonoBehaviour:
     cd: 0
     buffLastOrigin: 0
     buffLast: 0
-  direct: 0
-  roleObj: {fileID: 0}
+    isImmune: 0
+    isReflect: 0
+    addBlockCount: 0

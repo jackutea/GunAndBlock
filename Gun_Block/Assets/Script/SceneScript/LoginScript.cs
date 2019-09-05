@@ -31,7 +31,7 @@ public class LoginScript : MonoBehaviour {
 
         }
     }
-    
+
     void Start() {
 
         // 默认隐藏注册页
@@ -42,13 +42,13 @@ public class LoginScript : MonoBehaviour {
 
             if (username.text != "" && username.text != null) {
 
-                UserSendInfo user = new UserSendInfo(username.text, password.text);
+                LoginSend user = new LoginSend(username.text, password.text);
 
                 PlayerDataScript.USER_NAME = username.text;
 
                 string dataString = JsonUtility.ToJson(user);
 
-                CuteUDPManager.cuteUDP.emitServer("Login", dataString);
+                CuteUDPManager.cuteUDP.emitServer(HallEventEnum.Login.ToString(), dataString);
 
             } else {
 
@@ -80,13 +80,13 @@ public class LoginScript : MonoBehaviour {
 
                 if (newPassword.text == newRePassword.text && (newPassword.text != "" || newPassword.text != null)) {
 
-                    UserSendInfo user = new UserSendInfo(newUsername.text, newPassword.text);
+                    LoginSend user = new LoginSend(newUsername.text, newPassword.text);
 
                     PlayerDataScript.USER_NAME = username.text;
 
                     string dataString = JsonUtility.ToJson(user);
 
-                    CuteUDPManager.cuteUDP.emitServer("Register", dataString);
+                    CuteUDPManager.cuteUDP.emitServer(HallEventEnum.Register.ToString(), dataString);
 
                 } else {
 

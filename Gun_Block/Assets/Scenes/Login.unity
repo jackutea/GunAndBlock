@@ -162,7 +162,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+  m_Color: {r: 0.972549, g: 0.9764706, b: 0.98039216, a: 1}
   m_RaycastTarget: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -2863,7 +2863,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+  m_Color: {r: 0.972549, g: 0.9764706, b: 0.98039216, a: 1}
   m_RaycastTarget: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -2962,12 +2962,12 @@ PrefabInstance:
     - target: {fileID: 2700290227795007221, guid: e4fb0391eb36801479e21e7cd26f06db,
         type: 3}
       propertyPath: m_Color.g
-      value: 0.89411765
+      value: 0.13333334
       objectReference: {fileID: 0}
     - target: {fileID: 2700290227795007221, guid: e4fb0391eb36801479e21e7cd26f06db,
         type: 3}
       propertyPath: m_Color.b
-      value: 0.07450981
+      value: 0.011764706
       objectReference: {fileID: 0}
     - target: {fileID: 2700290227795007221, guid: e4fb0391eb36801479e21e7cd26f06db,
         type: 3}
@@ -2984,24 +2984,74 @@ PrefabInstance:
       propertyPath: m_Sprite
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 2700290227795007221, guid: e4fb0391eb36801479e21e7cd26f06db,
+        type: 3}
+      propertyPath: m_Color.r
+      value: 0.15294118
+      objectReference: {fileID: 0}
     - target: {fileID: 2700290227856440500, guid: e4fb0391eb36801479e21e7cd26f06db,
         type: 3}
       propertyPath: m_BackGroundColor.r
-      value: 1
+      value: 0.15294118
       objectReference: {fileID: 0}
     - target: {fileID: 2700290227856440500, guid: e4fb0391eb36801479e21e7cd26f06db,
         type: 3}
       propertyPath: m_BackGroundColor.g
-      value: 0.89411765
+      value: 0.13333334
       objectReference: {fileID: 0}
     - target: {fileID: 2700290227856440500, guid: e4fb0391eb36801479e21e7cd26f06db,
         type: 3}
       propertyPath: m_BackGroundColor.b
-      value: 0.07450981
+      value: 0.011764706
       objectReference: {fileID: 0}
     - target: {fileID: 2700290227856440500, guid: e4fb0391eb36801479e21e7cd26f06db,
         type: 3}
       propertyPath: m_BackGroundColor.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2700290227856440500, guid: e4fb0391eb36801479e21e7cd26f06db,
+        type: 3}
+      propertyPath: orthographic size
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2700290227856440523, guid: e4fb0391eb36801479e21e7cd26f06db,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2700290227856440523, guid: e4fb0391eb36801479e21e7cd26f06db,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2700290227856440523, guid: e4fb0391eb36801479e21e7cd26f06db,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2700290227856440523, guid: e4fb0391eb36801479e21e7cd26f06db,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2700290227856440523, guid: e4fb0391eb36801479e21e7cd26f06db,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2700290227606334984, guid: e4fb0391eb36801479e21e7cd26f06db,
+        type: 3}
+      propertyPath: m_ReferenceResolution.x
+      value: 1280
+      objectReference: {fileID: 0}
+    - target: {fileID: 2700290227606334984, guid: e4fb0391eb36801479e21e7cd26f06db,
+        type: 3}
+      propertyPath: m_ReferenceResolution.y
+      value: 720
+      objectReference: {fileID: 0}
+    - target: {fileID: 2700290227606334984, guid: e4fb0391eb36801479e21e7cd26f06db,
+        type: 3}
+      propertyPath: m_UiScaleMode
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2700290227795007243, guid: e4fb0391eb36801479e21e7cd26f06db,

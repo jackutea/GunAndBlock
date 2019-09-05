@@ -158,7 +158,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -60}
+  m_AnchoredPosition: {x: 0, y: -140}
   m_SizeDelta: {x: 160, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6628508787739217080
@@ -212,7 +212,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rolePanel: {fileID: 3409678404839005019}
   roleButton: {fileID: 8359707479711273829}
-  roleIndex: 0
   roleName: {fileID: 267399978297389106}
   level: {fileID: 2446325329567563589}
   enterGameButton: {fileID: 3837023803881817434}

@@ -45,9 +45,7 @@ class SocketApp extends event {
 
         if (i < serverCount) {
 
-            this.rds.hset("serverList", "serverId", i.toString());
-
-            this.rds.hset("serverList", "serverName", serverNameList[i]);
+            this.rds.HSET("serverList", i.toString(), serverNameList[i]);
 
             i += 1;
 
@@ -103,6 +101,9 @@ class SocketApp extends event {
 
         // 显示服务器列表
         this.cuteUDP.on("ShowServer", (dataString, sid) => { this.clusterReq("hall", dataString, sid, "ShowServer"); }); 
+        
+        // 重新请求角色属性
+        this.cuteUDP.on("RequestRoleState", (dataString, sid) => { this.clusterReq("hall", dataString, sid, "RequestRoleState"); }); 
 
         // 显示服务器自定义房间
         // this.cuteUDP.on("ShowRoom", (dataString, sid) => { this.clusterReq("hall", dataString, sid, "ShowRoom"); }); 
@@ -111,27 +112,18 @@ class SocketApp extends event {
         // 匹配申请
         this.cuteUDP.on("Compare", (dataString, sid) => { this.clusterReq("compare", dataString, sid, "Compare"); }); 
 
+        this.cuteUDP.on("CancelCompare", (dataString, sid) => { this.clusterReq("CancelCompare", dataString, sid, "CancelCompare"); }); 
+
         // Battle Cluster 负责处理
-        this.cuteUDP.on("Move", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "Move"); }); 
 
-        this.cuteUDP.on("CancelMove", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CancelMove"); }); 
+        this.cuteUDP.on("CastSkill", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CastSkill"); }); 
 
-        this.cuteUDP.on("RedBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "RedBlock"); }); 
-        this.cuteUDP.on("BlueBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "BlueBlock"); }); 
-
-        this.cuteUDP.on("CancelRedBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CancelRedBlock"); }); 
-        this.cuteUDP.on("CancelBlueBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CancelBlueBlock"); }); 
-
-        this.cuteUDP.on("RedPerfectBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "RedPerfectBlock"); }); 
-        this.cuteUDP.on("BluePerfectBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "BluePerfectBlock"); }); 
-
-        this.cuteUDP.on("CancelRedPerfectBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CancelRedPerfectBlock"); }); 
-        this.cuteUDP.on("CancelBluePerfectBlock", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "CancelBluePerfectBlock"); }); 
-
-        this.cuteUDP.on("Shoot", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "Shoot"); }); 
-
-        this.cuteUDP.on("PerfectBlockBullet", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "PerfectBlockBullet"); }); 
-
+        this.cuteUDP.on("ReflectBullet", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "ReflectBullet"); }); 
+        
+        this.cuteUDP.on("ImmuneBullet", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "ImmuneBullet"); }); 
+        
+        this.cuteUDP.on("KillBullet", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "KillBullet"); }); 
+        
         this.cuteUDP.on("BlockBullet", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "BlockBullet"); }); 
 
         this.cuteUDP.on("BeAttacked", (dataString, sid) => { this.clusterReq("battle", dataString, sid, "BeAttacked"); }); 
@@ -174,12 +166,16 @@ class SocketApp extends event {
         // 进入游戏
         this.on("EnterGame", (dataString, sid) => { this.socketRes(dataString, sid, "EnterGame"); });
 
+        // 重新请求角色属性
+        this.on("RequestRoleState", (dataString, sid) => { this.socketRes(dataString, sid, "RequestRoleState"); });
+
         // 显示服务器自定义房间
         // this.on("ShowRoom", (dataString, sid) => { this.socketRes(dataString, sid, "ShowRoom"); });
 
         // ———— Compare Cluster ————
         this.on("CompareWait", (dataString, sid) => { this.socketRes(dataString, sid, "CompareWait"); });
 
+        // 匹配成功
         this.on("CompareSuccess", (dataString, sid1) => {
 
             this.clusterReq("battle", dataString, sid1, "LoadFieldJson");
@@ -189,35 +185,27 @@ class SocketApp extends event {
                 this.battleSocketRes(dataJson, sid2, "CompareSuccess");
 
             })
-        });  // 匹配成功
+        });
+
+        this.on("CancelCompare", (dataString, sid) => { this.socketRes(dataString, sid, "CancelCompare"); });
 
         // ———— Battle Cluster ————
         // 移动
-        this.on("Move", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "Move"); });
+        this.on("CastSkill", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CastSkill"); });
 
-        this.on("CancelMove", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CancelMove"); });
+        this.on("ReflectBullet", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "ReflectBullet"); });
 
-        this.on("RedBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "RedBlock"); });
-        this.on("BlueBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "BlueBlock"); });
+        this.on("ImmuneBullet", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "ImmuneBullet"); });
 
-        this.on("CancelRedBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CancelRedBlock"); });
-        this.on("CancelBlueBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CancelBlueBlock"); });
-
-        this.on("RedPerfectBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "RedPerfectBlock"); });
-        this.on("BluePerfectBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "BluePerfectBlock"); });
-
-        this.on("CancelRedPerfectBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CancelRedPerfectBlock"); });
-        this.on("CancelBluePerfectBlock", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "CancelBluePerfectBlock"); });
-
-        this.on("Shoot", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "Shoot"); });
-
-        this.on("PerfectBlockBullet", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "PerfectBlockBullet"); });
+        this.on("KillBullet", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "KillBullet"); });
 
         this.on("BlockBullet", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "BlockBullet"); });
 
         this.on("BeAttacked", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "BeAttacked"); });
 
         this.on("Dead", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "Dead"); });
+
+        this.on("GameOver", (dataJson, sid) => { this.battleSocketRes(dataJson, sid, "GameOver"); });
 
     }
 
@@ -243,7 +231,7 @@ class SocketApp extends event {
         // })
     }
 
-    // 网络回应
+    // 单人广播 网络回应
     socketRes(dataString, sid, eventName) {
 
         process.nextTick(() => {
@@ -255,7 +243,7 @@ class SocketApp extends event {
         })
     }
 
-    // 战斗 网络回应
+    // 多人广播 网络回应
     battleSocketRes(dataJson, sid, eventName) {
 
         process.nextTick(() => {
@@ -264,9 +252,9 @@ class SocketApp extends event {
 
             let sidArray = dataJson.sidArray;
 
-            this.cuteUDP.emitBrocast(eventName, data, sidArray, sid);
+            this.cuteUDP.emitBrocast(eventName, data, sidArray);
 
-            console.log("向", sid, "回传", eventName);
+            console.log("向", sidArray, "回传", eventName);
                 
         })
     }

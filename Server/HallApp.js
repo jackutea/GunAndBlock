@@ -4,7 +4,11 @@ var Redis = require("redis");
 
 var mongoDB = require("./mongoDB/mongoDB");
 
-var Factory = require("./AllClass/Factory");
+var LoginSend = require("./AllClass/LoginSend");
+var RoleListSend = require("./AllClass/RoleListSend");
+var ServerSend = require("./AllClass/ServerSend");
+var AccountState = require("./AllClass/State/AccountState");
+var RoleState = require("./AllClass/State/RoleState");
 
 class HallApp extends event {
 
@@ -71,6 +75,8 @@ class HallApp extends event {
 
         this.on("EnterGame", this.enterGame); // 选定角色后进入游戏
 
+        this.on("RequestRoleState", this.RequestRoleState); // 重新请求角色属性
+
         this.on("ShowRoom", this.showRoom); // 显示服务器自定义房间
 
     }
@@ -96,7 +102,7 @@ class HallApp extends event {
 
                     console.log(username, "用户名不存在，可注册");
 
-                    let accountState = new Factory.AccountState();
+                    let accountState = new AccountState();
 
                     accountState.username = username;
 
@@ -108,7 +114,7 @@ class HallApp extends event {
 
                     mongoDB.insertOne("account", accountState, (err3, result) => {
 
-                        let loginSendInfo = new Factory.LoginSendInfo(0, "注册成功，直接登录");
+                        let loginSendInfo = new LoginSend(0, "注册成功，直接登录");
 
                         process.send({ eventName: "Register", dataString: JSON.stringify(loginSendInfo), sid: sid })
 
@@ -116,7 +122,7 @@ class HallApp extends event {
 
                 } else {
 
-                    let loginSendInfo = new Factory.LoginSendInfo(3, username + "已存在，无法注册");
+                    let loginSendInfo = new LoginSend(3, username + "已存在，无法注册");
 
                     process.send({ eventName: "Register", dataString: JSON.stringify(loginSendInfo), sid: sid })
 
@@ -146,7 +152,7 @@ class HallApp extends event {
 
                     console.log(username, "用户名不存在");
 
-                    let loginSendInfo = new Factory.LoginSendInfo(2, "用户名不存在");
+                    let loginSendInfo = new LoginSend(2, "用户名不存在");
 
                     process.send({ eventName: "Login", dataString: JSON.stringify(loginSendInfo), sid: sid});
 
@@ -156,20 +162,38 @@ class HallApp extends event {
 
                         // console.log(username, "密码正确，直接登录");
 
-                        this.rds.hset(sid, "username", username)
+                        this.rds.hget(username, "sid", (err, _sid) => {
 
-                        this.rds.hset(username, "sid", sid)
+                            // TODO 删除SID USERNAME对
+                            // TODO 清除排队信息
+                            // TODO 退出战场
 
-                        let loginSendInfo = new Factory.LoginSendInfo(0, "登录成功");
+                            if (_sid) {
+
+                                this.rds.hset(username, "sid", sid);
+
+                                this.rds.hdel(_sid, "username");
+
+                                this.rds.hset(sid, "username", username);
+
+                            } else {
+
+                                this.rds.hset(sid, "username", username);
+
+                                this.rds.hset(username, "sid", sid);
+
+                            }
+                        })
+
+                        let loginSendInfo = new LoginSend(0, "登录成功");
 
                         process.send({ eventName: "Login", dataString: JSON.stringify(loginSendInfo), sid: sid});
-
 
                     } else {
 
                         console.log(username, "密码错误");
 
-                        let loginSendInfo = new Factory.LoginSendInfo(1, "密码错误");
+                        let loginSendInfo = new LoginSend(1, "密码错误");
 
                         process.send({ eventName: "Login", dataString: JSON.stringify(loginSendInfo), sid: sid});
 
@@ -184,15 +208,17 @@ class HallApp extends event {
 
         process.nextTick(() => {
 
-            let serverSendInfo = new Factory.ServerSendInfo();
+            let serverSendInfo = new ServerSend();
 
-            this.rds.hvals("serverName", (err0, data0) => {
+            this.rds.hkeys("serverList", (err0, data0) => {
 
-                serverSendInfo.serverNameList = data0;
+                serverSendInfo.serverIdList = data0;
 
-                this.rds.hvals("serverId", (err1, data1) => {
+                this.rds.hvals("serverList", (err1, data1) => {
 
-                    serverSendInfo.serverIdList = data1;
+                    serverSendInfo.serverNameList = data1;
+                    
+                    console.log(data0,data1);
 
                     process.send({ eventName: "ShowServer", dataString: JSON.stringify(serverSendInfo), sid: sid});
 
@@ -216,7 +242,7 @@ class HallApp extends event {
 
                 mongoDB.find("role", findObj, (err1, result) => {
 
-                    let roleListSendInfo = new Factory.RoleListSendInfo();
+                    let roleListSendInfo = new RoleListSend();
 
                     roleListSendInfo.roleJson = {};
 
@@ -254,7 +280,7 @@ class HallApp extends event {
 
                 let username = data;
 
-                let roleState = new Factory.RoleState();
+                let roleState = new RoleState();
 
                 roleState.roleName = roleName;
 
@@ -314,6 +340,23 @@ class HallApp extends event {
                 this.rds.hset(username, "roleState", JSON.stringify(roleState))
 
                 process.send({ eventName: "EnterGame", dataString: "", sid: sid});
+
+            });
+        })
+    }
+
+    // 重新请求角色属性
+    RequestRoleState(dataString, sid) {
+
+        process.nextTick(() => {
+
+            let roleName = dataString;
+
+            mongoDB.findOne("role", { roleName: roleName }, (err, result) => {
+
+                console.log("请求角色", result);
+
+                process.send({ eventName: "RequestRoleState", dataString: JSON.stringify(result), sid: sid});
 
             });
         })

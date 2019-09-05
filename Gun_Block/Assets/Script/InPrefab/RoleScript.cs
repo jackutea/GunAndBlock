@@ -13,7 +13,13 @@ public class RoleScript : MonoBehaviour {
     SpriteRenderer roleSpriteRenderer;
     Animator roleAni;
 
+    AudioSource audioSource;
+    AudioClip dongAudio;
+    AudioClip taAudio;
+
     public bool isMe;
+    public string oppoSid;
+    public int marchIndex;
 
     public Text nameBar;
     public Slider hpSlider;
@@ -21,6 +27,9 @@ public class RoleScript : MonoBehaviour {
     public Slider singSlider;
 
     float singTime = 0;
+
+    public Button AButton;
+    public Button BButton;
 
     public RoleState roleState = null;
 
@@ -40,11 +49,35 @@ public class RoleScript : MonoBehaviour {
 
         roleAni = GetComponent<Animator>();
 
+        audioSource = gameObject.AddComponent<AudioSource>();
+
+        audioSource.playOnAwake = false;
+
+        dongAudio = Resources.Load<AudioClip>("Audio/dong");
+
+        taAudio = Resources.Load<AudioClip>("Audio/ta");
+
         nameBar.text = roleState.roleName;
 
         roleState.username = PlayerDataScript.USER_NAME;
 
         initSpellToSkill();
+
+        AButton = GameObject.FindWithTag("AButton").GetComponent<Button>();
+        
+        BButton = GameObject.FindWithTag("BButton").GetComponent<Button>();
+
+        AButton.onClick.AddListener(() => {
+
+            touchCheck("A");
+
+        });
+
+        BButton.onClick.AddListener(() => {
+
+            touchCheck("B");
+
+        });
 
     }
 
@@ -52,7 +85,7 @@ public class RoleScript : MonoBehaviour {
 
         aniCheck(); // 动画更替
 
-        barCheck(); // 生命值显示
+        barCheck(); // 生命条显示
 
         if (!isMe) return;
 
@@ -93,6 +126,22 @@ public class RoleScript : MonoBehaviour {
         }
     }
 
+    // 手机按键监测
+    void touchCheck(string btn) {
+
+        if (!isMe) return;
+
+        if (roleState == null) return;
+
+        if (roleState.isDead) return;
+
+        if (roleState.currentSpell.Length < 3) {
+
+            roleState.currentSpell += btn;
+
+        }
+    }
+
     // (个人角色) 按键监测 Update
     void inputKeyCheck() {
 
@@ -106,9 +155,21 @@ public class RoleScript : MonoBehaviour {
 
                 roleState.currentSpell += "A";
 
+                roleAni.Play("roleRed");
+
+                audioSource.clip = dongAudio;
+
+                audioSource.Play();
+
             } else if (Input.GetKeyDown(KeyCode.K)) {
 
                 roleState.currentSpell += "B";
+
+                roleAni.Play("roleBlue");
+
+                audioSource.clip = taAudio;
+
+                audioSource.Play();
 
             } else if (Input.GetKeyDown(KeyCode.L)) {
 
@@ -131,9 +192,11 @@ public class RoleScript : MonoBehaviour {
 
             int skillEnum = (int)spellToSkillDic[currentSpell];
 
-            Skill skill = roleState.skillList[skillEnum];
+            SkillState skill = roleState.skillList[skillEnum];
 
             if (roleState.isSinging == false) {
+
+                roleState.isBlocking = false;
 
                 if (roleState.skillList[skillEnum].cd > 0) {
 
@@ -167,21 +230,9 @@ public class RoleScript : MonoBehaviour {
 
                 } else {
 
-                    roleState.isSinging = false;
-
-                    roleState.skillList[skillEnum].cd = roleState.skillList[skillEnum].cdOrigin;
-
-                    roleState.skillList[skillEnum].buffLast = roleState.skillList[skillEnum].buffLastOrigin;
-
-                    GameObject skillObj = Instantiate(PrefabCollection.skillPrefabDic[skillEnum], transform.position, transform.rotation, transform.parent.transform);
-
-                    SkillScript skillScript = skillObj.GetComponent<SkillScript>();
-
-                    skillScript.sid = roleState.sid;
-
-                    skillScript.skillEnum = skillEnum;
-
                     roleState.currentSpell = "";
+
+                    CuteUDPManager.cuteUDP.emitServer(BattleEventEnum.CastSkill.ToString(), skillEnum.ToString());
 
                 }
             }
@@ -195,16 +246,32 @@ public class RoleScript : MonoBehaviour {
         }
     }
 
-    // (个人角色) 技能施放
-    void skillCast(string spell) {
-
-        if (!isMe) return;
+    // (通用) 技能施放
+    public void castSkill(int skillEnum, string timeSample) {
 
         if (roleState == null) return;
 
-        Debug.Log("施放了" + spell);
+        roleState.isSinging = false;
 
-        roleState.currentSpell = "";
+        roleState.skillList[skillEnum].cd = roleState.skillList[skillEnum].cdOrigin;
+
+        roleState.skillList[skillEnum].buffLast = roleState.skillList[skillEnum].buffLastOrigin;
+
+        GameObject skillObj = Instantiate(PrefabCollection.skillPrefabDic[skillEnum], transform.position, transform.rotation, transform.parent.transform);
+
+        SkillScript skillScript = skillObj.GetComponent<SkillScript>();
+
+        skillObj.tag = (roleState.isLeftAlly) ? "LeftSkill" : "RightSkill";
+
+        skillScript.sid = roleState.sid;
+
+        skillScript.timeSample = timeSample;
+
+        skillScript.bid = skillScript.getBid(timeSample);
+
+        skillScript.oppoSid = oppoSid;
+
+        skillScript.skillEnum = skillEnum;
 
     }
 
@@ -224,7 +291,7 @@ public class RoleScript : MonoBehaviour {
 
             int skillEnum = i;
 
-            Skill skill = roleState.skillList[skillEnum];
+            SkillState skill = roleState.skillList[skillEnum];
 
             if (skill.cd > 0) {
 
@@ -255,6 +322,8 @@ public class RoleScript : MonoBehaviour {
         hpSlider.maxValue = fullHp;
 
         hpSlider.value = nowHp;
+
+        if (nowHp <= 0 && isMe && !roleState.isDead) dead();
 
         // 盾值
         float fullBlockLife = roleState.blockLifeOrigin;
@@ -293,33 +362,18 @@ public class RoleScript : MonoBehaviour {
             roleAni.Play("roleDead");
 
         }
-
     }
-
 
     // 死亡
     public void dead() {
 
         roleState.isDead = true;
 
-        roleSpriteRenderer.sortingOrder = 1;
+        // gameObject.SetActive(false);
 
-        CuteUDPManager.cuteUDP.emitServer("Dead", "0");
+        // roleSpriteRenderer.sortingOrder = 1;
 
-    }
+        CuteUDPManager.cuteUDP.emitServer(BattleEventEnum.Dead.ToString(), "0");
 
-    // 技能碰撞检测
-    void OnTriggerEnter(Collider col) {
-
-        SkillScript ss = col.gameObject.GetComponent<SkillScript>();
-
-        // 我，是左边，碰到了右边来的子弹
-        if (col.tag == "RightAllyBullet" && roleState.isLeftAlly && isMe) {
-
-
-        // 我，是右边，碰到了左边来的子弹
-        } else if (col.tag == "LeftAllyBullet" && !roleState.isLeftAlly && isMe) {
-            
-        }
     }
 }

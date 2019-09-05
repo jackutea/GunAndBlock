@@ -47,7 +47,7 @@ public class OneRolePanelScript : MonoBehaviour {
 
             string dataString = JsonUtility.ToJson(roleState);
 
-            CuteUDPManager.cuteUDP.emitServer("EnterGame", dataString);
+            CuteUDPManager.cuteUDP.emitServer(HallEventEnum.EnterGame.ToString(), dataString);
 
         });
 
@@ -56,7 +56,7 @@ public class OneRolePanelScript : MonoBehaviour {
 
             string roleName = PlayerDataScript.ROLE_STATE.roleName;
 
-            CuteUDPManager.cuteUDP.emitServer("DeleteRole", roleName);
+            CuteUDPManager.cuteUDP.emitServer(HallEventEnum.DeleteRole.ToString(), roleName);
 
         });
         

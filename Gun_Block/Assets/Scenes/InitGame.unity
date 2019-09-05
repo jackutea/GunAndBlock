@@ -293,5 +293,17 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 5241023860502246832, guid: cd3920a97bab91548b8c85522ca86a12,
         type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: gameOverWindow
+      value: 
+      objectReference: {fileID: 4294267123951548706, guid: 41230fdbc1c475a4291e87b05a5389be,
+        type: 3}
+    - target: {fileID: 1250313942281040052, guid: bced0211b2526c142be05bcc250500d4,
+        type: 3}
+      propertyPath: compareWindow
+      value: 
+      objectReference: {fileID: 4083159241771248896, guid: 4439657345adb34499a16b9a901449c2,
+        type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bced0211b2526c142be05bcc250500d4, type: 3}

@@ -15,11 +15,11 @@ class CuteUDPEvent : MonoBehaviour {
     // 0 成功 1密码错 2用户名错 3其他
     public static void onLogin(string dataString) {
 
-        LoginRecvInfo loginRecvInfo = JsonUtility.FromJson<LoginRecvInfo>(dataString);
+        LoginRecv loginRecvInfo = JsonUtility.FromJson<LoginRecv>(dataString);
 
         if (loginRecvInfo.stateCode == 0) {
 
-            CuteUDPManager.cuteUDP.emitServer("ShowServer", "请求服务器列表");
+            CuteUDPManager.cuteUDP.emitServer(HallEventEnum.ShowServer.ToString(), "请求服务器列表");
 
         } else {
 
@@ -31,7 +31,9 @@ class CuteUDPEvent : MonoBehaviour {
     // 接收服务器回传
     public static void onShowServer(string dataString) {
 
-        ServerRecvInfo serverRecvInfo = JsonUtility.FromJson<ServerRecvInfo>(dataString);
+        Debug.Log("服务器信息" + dataString);
+
+        ServerRecv serverRecvInfo = JsonConvert.DeserializeObject<ServerRecv>(dataString);
 
         ServerDataScript.serverIdList = serverRecvInfo.serverIdList;
 
@@ -51,7 +53,7 @@ class CuteUDPEvent : MonoBehaviour {
     // 接收角色回传
     public static void onShowRoles(string dataString) {
 
-        RoleListRecvInfo roleListInfo = JsonConvert.DeserializeObject<RoleListRecvInfo>(dataString);
+        RoleListRecv roleListInfo = JsonConvert.DeserializeObject<RoleListRecv>(dataString);
 
         Dictionary<string, RoleState> roleJson = roleListInfo.roleJson;
 
@@ -111,12 +113,12 @@ class CuteUDPEvent : MonoBehaviour {
 
         PlayerDataScript.ROLE_STATE.waitMode = modeCode;
 
-        showAlertWindow("正在匹配中"); // TODO ： 换成其他显示方式
+        // showAlertWindow("正在匹配中"); // TODO ： 换成其他显示方式
 
     }
 
     // 取消匹配回传
-    public static void onCompareCancel(string dataString) {
+    public static void onCancelCompare(string dataString) {
 
         PlayerDataScript.ROLE_STATE.waitMode = -1;
 
@@ -127,9 +129,9 @@ class CuteUDPEvent : MonoBehaviour {
 
         // dataString = class FieldInfo
         Debug.LogWarning("匹配成功，回传战场数据 :" + dataString);
-        FieldInfo fieldInfo = JsonConvert.DeserializeObject<FieldInfo>(dataString);
+        FieldState fieldInfo = JsonConvert.DeserializeObject<FieldState>(dataString);
 
-        PlayerDataScript.FIELD_INFO = fieldInfo;
+        PlayerDataScript.FIELD_STATE = fieldInfo;
 
         SceneManager.LoadScene("Field");
 
@@ -138,6 +140,140 @@ class CuteUDPEvent : MonoBehaviour {
     // 接收服务器房间信息回传
     public static void onShowRoom(string dataString) {
 
+
+    }
+
+    // 有人施放技能
+    public static void onCastSkill(string dataString) {
+
+        CastSkillRecv castSkillRecv = JsonConvert.DeserializeObject<CastSkillRecv>(dataString);
+
+        int skillEnum = castSkillRecv.skillEnum;
+
+        string sid = castSkillRecv.sid;
+
+        GameObject whoCast = GameObject.Find(sid);
+
+        if (whoCast == null) return;
+
+        RoleScript rs = whoCast.GetComponent<RoleScript>();
+
+        rs.castSkill(skillEnum, castSkillRecv.timeSample);
+
+    }
+
+    // 有人反射子弹
+    public static void onReflectBullet(string dataString) {
+
+        BulletRecv bulletRecv = JsonConvert.DeserializeObject<BulletRecv>(dataString);
+
+        string bid = bulletRecv.bid;
+
+        GameObject whichBullet = GameObject.Find(bid);
+
+        if (whichBullet == null) return;
+
+        SkillScript bs = whichBullet.GetComponent<SkillScript>();
+
+        bs.onCol(bulletRecv.sid, BattleEventEnum.ReflectBullet);
+
+    }
+
+    // 有人免疫子弹
+    public static void onImmuneBullet(string dataString) {
+
+        BulletRecv bulletRecv = JsonConvert.DeserializeObject<BulletRecv>(dataString);
+
+        string bid = bulletRecv.bid;
+
+        GameObject whichBullet = GameObject.Find(bid);
+
+        if (whichBullet == null) return;
+
+        SkillScript bs = whichBullet.GetComponent<SkillScript>();
+
+        bs.onCol(bulletRecv.sid, BattleEventEnum.ImmuneBullet);
+
+    }
+
+    // 有人消灭子弹
+    public static void onKillBullet(string dataString) {
+
+        BulletRecv bulletRecv = JsonConvert.DeserializeObject<BulletRecv>(dataString);
+
+        string bid = bulletRecv.bid;
+
+        GameObject whichBullet = GameObject.Find(bid);
+
+        if (whichBullet == null) return;
+
+        SkillScript bs = whichBullet.GetComponent<SkillScript>();
+
+        bs.onCol(bulletRecv.sid, BattleEventEnum.KillBullet);
+
+    }
+
+    // 有人格挡子弹
+    public static void onBlockBullet(string dataString) {
+
+        BulletRecv bulletRecv = JsonConvert.DeserializeObject<BulletRecv>(dataString);
+
+        string bid = bulletRecv.bid;
+
+        GameObject whichBullet = GameObject.Find(bid);
+
+        if (whichBullet == null) return;
+
+        SkillScript bs = whichBullet.GetComponent<SkillScript>();
+
+        bs.onCol(bulletRecv.sid, BattleEventEnum.BlockBullet);
+
+    }
+
+    // 有人被直接击中
+    public static void onBeAttacked(string dataString) {
+
+        BulletRecv bulletRecv = JsonConvert.DeserializeObject<BulletRecv>(dataString);
+
+        string bid = bulletRecv.bid;
+
+        GameObject whichBullet = GameObject.Find(bid);
+
+        if (whichBullet == null) return;
+
+        SkillScript bs = whichBullet.GetComponent<SkillScript>();
+
+        bs.onCol(bulletRecv.sid, BattleEventEnum.BeAttacked);
+
+    }
+
+    // 有人挂菜
+    public static void onDead(string dataString) {
+
+        string deadSid = dataString;
+
+        FieldScript.instance.loseGame(deadSid);
+
+    }
+
+    // 游戏结束
+    public static void onGameOver(string dataString) {
+
+        // dataString = int loser(0 为左边玩家败)
+        int loser = int.Parse(dataString);
+
+        FieldScript.instance.gameOver(loser);
+
+    }
+
+    // 游戏结算后，接收单角色回传，并跳转至主页
+    public static void onRequestRoleState(string dataString) {
+
+        RoleState rs = JsonConvert.DeserializeObject<RoleState>(dataString);
+
+        PlayerDataScript.ROLE_STATE = rs;
+
+        SceneManager.LoadScene("Home");
 
     }
 

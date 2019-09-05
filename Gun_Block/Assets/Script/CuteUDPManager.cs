@@ -26,15 +26,17 @@ public class CuteUDPManager : MonoBehaviour {
 
         serverIp = "127.0.0.1";
 
-        // serverIp = "47.104.169.23";
+        // serverIp = "120.34.225.167";
+
+        serverIp = "47.104.82.241";
 
         serverHallPort = 10000;
 
-        serverBattlePort = 10001;
+        serverBattlePort = 10002;
 
         currentPort = serverHallPort;
 
-        localPort = 11001;
+        localPort = 10001;
 
         cuteUDP = new CuteUDP(serverIp, currentPort, localPort);
 
@@ -136,10 +138,80 @@ public class CuteUDPManager : MonoBehaviour {
 
         });
 
+        // 取消匹配
+        cuteUDP.on<string>("CancelCompare", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onCancelCompare, dataString);
+
+        });
+
         // 显示自定义房间
         cuteUDP.on<string>("ShowRoom", (string dataString) => {
 
             addQueue(CuteUDPEvent.onShowRoom, dataString);
+
+        });
+
+        // 施放技能
+        cuteUDP.on<string>("CastSkill", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onCastSkill, dataString);
+
+        });
+
+        // 反射子弹
+        cuteUDP.on<string>("ReflectBullet", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onReflectBullet, dataString);
+
+        });
+
+        // 免疫子弹
+        cuteUDP.on<string>("ImmuneBullet", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onImmuneBullet, dataString);
+
+        });
+
+        // 阻挡子弹
+        cuteUDP.on<string>("KillBullet", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onKillBullet, dataString);
+
+        });
+
+        // 格挡子弹
+        cuteUDP.on<string>("BlockBullet", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onBlockBullet, dataString);
+
+        });
+
+        // 直接击中
+        cuteUDP.on<string>("BeAttacked", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onBeAttacked, dataString);
+
+        });
+
+        // 挂菜
+        cuteUDP.on<string>("Dead", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onDead, dataString);
+
+        });
+
+        // 游戏结束
+        cuteUDP.on<string>("GameOver", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onGameOver, dataString);
+
+        });
+
+        // 重新请求角色属性
+        cuteUDP.on<string>("RequestRoleState", (string dataString) => {
+
+            addQueue(CuteUDPEvent.onRequestRoleState, dataString);
 
         });
 

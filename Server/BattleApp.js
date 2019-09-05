@@ -1,6 +1,10 @@
 var event = require("events");
 var cluster = require("cluster");
 var Redis = require("redis");
+var mongoDB = require("./mongoDB/mongoDB");
+
+var DefaultLevel = require("./Config/DefaultLevel");
+var FrameQueue = require("./AllClass/FrameQueue");
 
 class BattleApp extends event {
 
@@ -12,7 +16,7 @@ class BattleApp extends event {
 
         this.rds = Redis.createClient(redisPort, redisIp);
 
-        this.delayTime = 20;
+        this.frameTime = 18;
 
         this.initClusterListener();
 
@@ -20,16 +24,49 @@ class BattleApp extends event {
 
         this.FieldJson = {};
 
-        setInterval(() => {
+        this.frameList = [];
 
-            if (this.delayTime > 0) {
+        this.delayFunc(this);
 
-                this.delayTime -= 1;
+    }
 
-            }
+    // 帧同步
+    delayFunc(instance) {
+
+        new Promise((res, rej) => {
+
+            process.nextTick(() => {
+
+                for (let i = 0; i < instance.frameList.length; i += 1) {
+
+                    let nowFrame = instance.frameList.shift();
+
+                    if (nowFrame !== undefined) {
+
+                        let eventName = nowFrame.eventName;
+
+                        let dataString = nowFrame.dataString;
+
+                        let sid = nowFrame.sid;
+
+                        process.send({ eventName: eventName, dataString: dataString, sid: sid});
+
+                    } else {
+
+                        break;
+
+                    }
+                }
+
+                res();
+
+            });
             
-        }, 1);
+        }).then(() => {
 
+            setTimeout(instance.delayFunc, instance.frameTime, instance);
+
+        })
     }
 
     // 初始化进程监听器
@@ -64,29 +101,17 @@ class BattleApp extends event {
 
         this.on("LoadFieldJson", this.loadFieldJson);
 
-        this.on("Move", this.move); // 玩家移动
+        this.on("CastSkill", this.castSkill); // 玩家施放技能
 
-        this.on("CancelMove", (dataString, sid) => { this.requestSidJson(dataString, sid, "CancelMove"); }); // 玩家取消移动
+        this.on("ReflectBullet", (dataString, sid) => { this.bulletEvent(dataString, sid, "ReflectBullet"); }); // 玩家完美格挡了子弹
 
-        this.on("RedBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "Block"); }); // 玩家格挡
-        this.on("BlueBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "Block"); }); // 玩家格挡
+        this.on("ImmuneBullet", (dataString, sid) => { this.bulletEvent(dataString, sid, "ImmuneBullet"); }); // 玩家免疫了子弹
 
-        this.on("CancelRedBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "CancelRedBlock"); }); // 玩家取消格挡
-        this.on("CancelBlueBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "CancelBlueBlock"); }); // 玩家取消格挡
+        this.on("KillBullet", (dataString, sid) => { this.bulletEvent(dataString, sid, "KillBullet"); }); // 子弹击中护盾
 
-        this.on("RedPerfectBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "RedPerfectBlock"); }); // 玩家完美格挡
-        this.on("BluePerfectBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "BluePerfectBlock"); }); // 玩家完美格挡
+        this.on("BlockBullet", (dataString, sid) => { this.bulletEvent(dataString, sid, "BlockBullet"); }); // 玩家普通格挡了子弹
 
-        this.on("CancelRedPerfectBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "CancelRedPerfectBlock"); }); // 玩家取消完美格挡
-        this.on("CancelBluePerfectBlock", (dataString, sid) => { this.requestSidJson(dataString, sid, "CancelBluePerfectBlock"); }); // 玩家取消完美格挡
-
-        this.on("Shoot", this.shoot); // 玩家射击
-
-        this.on("PerfectBlockBullet", this.perfectBlockBullet); // 玩家完美格挡了子弹
-
-        this.on("BlockBullet", this.blockBullet); // 玩家普通格挡了子弹
-
-        this.on("BeAttacked", this.beAttacked); // 子弹直接命中
+        this.on("BeAttacked", (dataString, sid) => { this.bulletEvent(dataString, sid, "BeAttacked"); }); // 子弹直接命中
 
         this.on("Dead", this.dead); // dead
 
@@ -106,7 +131,9 @@ class BattleApp extends event {
 
             let sidArray = Object.keys(sidJson);
 
-            process.send({ eventName: "LoadFieldSuccess", dataString: {data: dataString, sidArray: sidArray}, sid: sid});
+            this.frameList.push(new FrameQueue("LoadFieldSuccess", {data: dataString, sidArray: sidArray}, sid));
+
+            // process.send({ eventName: "LoadFieldSuccess", dataString: {data: dataString, sidArray: sidArray}, sid: sid});
 
         });
     }
@@ -169,75 +196,63 @@ class BattleApp extends event {
         })
     }
 
-    // 请求 sidJson
-    requestSidJson(dataString, sid, eventName) {
-
-        process.nextTick(() => {
-
-            this.getRedisSidJson(sid, (sidJson) => {
-
-                let sidArray = Object.keys(sidJson);
-
-                process.send({ eventName: eventName, dataString: {data: sid, sidArray: sidArray}, sid: sid});
-
-            });
-        })
-    }
-
-    // 玩家移动
-    move(dataString, sid) {
-
-        process.nextTick(() => {
-
-            // console.log("BattleApp move :", dataString);
-
-            if (this.delayTime <= 0) {
-
-                this.getRedisSidJson(sid, (sidJson) => {
-
-                    let sidArray = Object.keys(sidJson);
-    
-                    process.send({ eventName: "Move", dataString : {data: dataString, sidArray: sidArray}, sid: sid });
-    
-                })
-            }
-        })
-    }
-
-    // 子弹的处理方式
+    // 子弹击中的处理方式
+    // dataString = bid
     bulletEvent(dataString, sid, eventName) {
 
         process.nextTick(() => {
 
-            let bulletInfo = JSON.parse(dataString);
+            let bid = dataString;
 
-            bulletInfo.sid = sid;
+            let json = {
+
+                bid: bid,
+
+                sid: sid,
+            }
 
             this.getRedisSidJson(sid, (sidJson) => {
 
                 let sidArray = Object.keys(sidJson);
 
-                process.send({ eventName: eventName, dataString: {data: JSON.stringify(bulletInfo), sidArray: sidArray} , sid: sid});
+                this.frameList.push(new FrameQueue(eventName, {data: JSON.stringify(json), sidArray: sidArray}, sid));
 
-            })
-        })
+                // process.send({ eventName: eventName, dataString: {data: JSON.stringify(json), sidArray: sidArray} , sid: sid});
+
+            });
+        });
     }
 
-    // 玩家射击
-    // dataString = class BulletInfo
-    shoot(dataString, sid) { this.bulletEvent(dataString, sid, "Shoot"); }
+    // 施放技能
+    // dataString = skillEnum
+    castSkill(dataString, sid) {
 
-    // 玩家完美格挡了子弹
-    // dataString = BulletInfo
-    perfectBlockBullet(dataString, sid) { this.bulletEvent(dataString, sid, "PerfectBlockBullet"); }
+        process.nextTick(() => {
 
-    // 玩家普通格挡了子弹
-    // dataString = BulletInfo
-    blockBullet(dataString, sid) { this.bulletEvent(dataString, sid, "BlockBullet"); }
+            let skillEnum = parseInt(dataString);
 
-    // 被直接击中
-    // dataString = BulletInfo
-    beAttacked(dataString, sid) { this.bulletEvent(dataString, sid, "BeAttacked"); }
+            let json = {
+
+                skillEnum: skillEnum,
+                
+                sid: sid,
+
+                timeSample: (new Date()).valueOf().toString()
+
+            }
+
+            this.getRedisSidJson(sid, (sidJson) => {
+
+                let sidArray = Object.keys(sidJson);
+
+                this.frameList.push(new FrameQueue("CastSkill", {data: JSON.stringify(json), sidArray: sidArray}, sid));
+
+                // process.send({ eventName: "CastSkill", dataString: {data: JSON.stringify(json), sidArray: sidArray} , sid: sid});
+
+            });
+
+        });
+    }
 
     // dead
     // dataString = ""
@@ -247,18 +262,204 @@ class BattleApp extends event {
 
             this.rds.hget(sid, "fieldId", (err0, data0) => {
 
-                let fieldId = data0;
+                let fieldId = data0; // 获取死亡角色所在的 战场id
 
-                let sidJson = this.FieldJson[fieldId].sidJson
+                let sidJson = this.FieldJson[fieldId].sidJson // 战场的所有玩家信息
 
                 sidJson[sid].isDead = true;
 
                 let sidArray = Object.keys(sidJson);
 
-                process.send({ eventName: "Dead", dataString: {data: sid, sidArray: sidArray}, sid: sid});
+                if (sidJson[sid].isLeftAlly) {
+
+                    this.FieldJson[fieldId].leftLive -= 1; // 如果死亡角色属于左边
+
+                } else {
+
+                    this.FieldJson[fieldId].rightLive -= 1;
+
+                }
+
+                this.frameList.push(new FrameQueue("Dead", {data: sid, sidArray: sidArray}, sid));
+
+                // 处理胜负情况
+                if (this.FieldJson[fieldId].leftLive <= 0) {
+
+                    // 左败 游戏结束
+                    console.log("左败");
+
+                    new Promise((res, rej) => {
+
+                        this.insertGameResult(sidJson, false, 0);
+
+                        res();
+
+                    }).then(() => {
+
+                        this.frameList.push(new FrameQueue("GameOver", {data: 0, sidArray: sidArray}, sid)); // 推送游戏结束给客户端 0 为左败
+
+                    })
+
+                } else if (this.FieldJson[fieldId].rightLive <= 0) {
+
+                    // 右败 游戏结束
+                    console.log("右败");
+
+                    new Promise((res, rej) => {
+
+                        this.insertGameResult(sidJson, true, 0);
+
+                        res();
+
+                    }).then(() => {
+
+                        this.frameList.push(new FrameQueue("GameOver", {data: 0, sidArray: sidArray}, sid)); // 推送游戏结束给客户端 0 为左败
+
+                    })
+
+                } else {
+
+                    // 未分胜负
+                    console.log("有角色死亡，但未分胜负");
+
+                }
+
+                console.log("fieldjson", this.FieldJson);
+                // console.log("sidJson[sid]", sidJson[sid]);
+
+                // process.send({ eventName: "Dead", dataString: {data: sid, sidArray: sidArray}, sid: sid});
 
             });
         })
+    }
+
+    // 将游戏结果插入数据库
+    insertGameResult(sidJson, isLeftWin, index) {
+
+        let winScore = 10;
+
+        let winExp = 10;
+
+        let sidList = Object.keys(sidJson);
+
+        if (index < sidList.length) {
+
+            let sid = sidList[index];
+
+            let roleState = sidJson[sid];
+
+            if (!isLeftWin) {
+
+                if (roleState.isLeftAlly) {
+
+                    if (roleState.level >= DefaultLevel.levelExpRequireList.length) {
+
+                        roleState.exp = DefaultLevel.levelExpRequireList.reverse()[0];
+
+                        roleState.score -= winScore;
+
+                        roleState.rank = this.growRank(roleState.score);
+
+                    }
+    
+                } else {
+
+                    if (roleState.level >= DefaultLevel.levelExpRequireList.length) {
+
+                        roleState.score += winScore;
+
+                        roleState.exp = DefaultLevel.levelExpRequireList.reverse()[0];
+
+                        roleState.rank = this.growRank(roleState.score);
+
+                    } else {
+
+                        roleState.exp += winExp;
+
+                        roleState.level = this.growLevel(roleState.exp);
+
+                    }
+                }
+
+            } else {
+
+                if (roleState.isLeftAlly) {
+
+                    if (roleState.level >= DefaultLevel.levelExpRequireList.length) {
+
+                        roleState.score += winScore;
+
+                        roleState.exp = DefaultLevel.levelExpRequireList.reverse()[0];
+
+                        roleState.rank = this.growRank(roleState.score);
+
+                    } else {
+
+                        roleState.exp += winExp;
+
+                        roleState.level = this.growLevel(roleState.exp);
+
+                    }
+    
+                } else {
+    
+                    if (roleState.level >= DefaultLevel.levelExpRequireList.length) {
+
+                        roleState.exp = DefaultLevel.levelExpRequireList.reverse()[0];
+
+                        roleState.score -= winScore;
+
+                        roleState.rank = this.growRank(roleState.score);
+
+                    }
+    
+                }
+            }
+
+            let insertData = { score: roleState.score, exp: roleState.exp, level: roleState.level, rank: roleState.rank };
+
+            mongoDB.updateOne("role", { username: roleState.username }, insertData, (err, result) => {
+
+                // console.log(result);
+
+                index += 1;
+
+                this.insertGameResult(sidJson, isLeftWin, index, () => {});
+
+            })
+            
+        }
+    }
+
+    // 升级
+    growLevel(exp) {
+
+        for (let i = 0; i < DefaultLevel.levelExpRequireList.length; i += 1) {
+
+            let requireExp = DefaultLevel.levelExpRequireList[i];
+
+            if (exp < requireExp) {
+
+                return i;
+
+            }
+        }
+
+    }
+
+    // 升降段
+    growRank(score) {
+
+        for (let i = 0; i < DefaultLevel.rankScoreRequireList.length; i += 1) {
+
+            let requireScore = DefaultLevel.rankScoreRequireList[i];
+
+            if (score < requireScore) {
+
+                return i;
+
+            }
+        }
     }
 }
 

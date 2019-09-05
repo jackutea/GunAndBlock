@@ -8,6 +8,8 @@ class PrefabCollection : MonoBehaviour {
 
     public static PrefabCollection instance;
     public GameObject alertWindow = null;
+    public GameObject gameOverWindow = null;
+    public GameObject compareWindow = null;
 
     public GameObject oneRolePanelPrefab = null;
 

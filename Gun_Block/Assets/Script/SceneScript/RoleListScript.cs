@@ -60,7 +60,7 @@ public class RoleListScript : MonoBehaviour {
 
             if (newRoleName.text != "" && newRoleName.text != null) {
 
-                CreateRoleSendInfo roleSendInfo = new CreateRoleSendInfo();
+                CreateRoleSend roleSendInfo = new CreateRoleSend();
 
                 roleSendInfo.roleName = newRoleName.text;
 
@@ -68,7 +68,7 @@ public class RoleListScript : MonoBehaviour {
 
                 string dataString = JsonUtility.ToJson(roleSendInfo);
 
-                CuteUDPManager.cuteUDP.emitServer("CreateRole", dataString);
+                CuteUDPManager.cuteUDP.emitServer(HallEventEnum.CreateRole.ToString(), dataString);
 
             } else {
 

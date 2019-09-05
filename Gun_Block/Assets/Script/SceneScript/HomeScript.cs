@@ -7,6 +7,10 @@ using UnityEngine.SceneManagement;
 
 public class HomeScript : MonoBehaviour {
 
+    public static HomeScript instance;
+
+    public GameObject HUDPanel;
+
     // TODO : 匹配面板
     public Button soloCompareBtn;
     public Button teamCompareBtn;
@@ -44,6 +48,8 @@ public class HomeScript : MonoBehaviour {
 
     void Start() {
 
+        if (instance == null) instance = this;
+
         showRoleInfo();
 
         soloCompareBtn.onClick.AddListener(() => {
@@ -80,8 +86,9 @@ public class HomeScript : MonoBehaviour {
 
     void compareSend(string modeCode) {
 
-        CuteUDPManager.cuteUDP.emitServer("Compare", modeCode);
+        CuteUDPManager.cuteUDP.emitServer(CompareEventEnum.Compare.ToString(), modeCode);
 
+        showCompareWindow(modeCode);
     }
 
     void Update() {
@@ -105,11 +112,22 @@ public class HomeScript : MonoBehaviour {
 
         rank.text = "段位 : " + rs.rank.ToString();
         
-        score.text = "排位积分 : " + rs.score.ToString();
+        score.text = "积分 : " + rs.score.ToString();
         
         life.text = "生命 : " + rs.life.ToString();
         
         blockLife.text = "盾强度 : " + rs.blockLife.ToString();
         
+    }
+
+    // 显示匹配窗
+    public void showCompareWindow(string modeCode) {
+
+        GameObject compareWindowObj = Instantiate(PrefabCollection.instance.compareWindow, HUDPanel.transform);
+
+        CompareWindowScript cws = compareWindowObj.GetComponent<CompareWindowScript>();
+
+        cws.modeCode = modeCode;
+
     }
 }

@@ -21,9 +21,6 @@ EditorBuildSettings:
     path: Assets/Scenes/Home.unity
     guid: 597661196661e0d45900685187f4ec5c
   - enabled: 1
-    path: Assets/Scenes/ChooseRoom.unity
-    guid: 065299518a15eba4099b830c257765a7
-  - enabled: 1
     path: Assets/Scenes/Field.unity
     guid: cc0af71c6a306144a9cb715b4e48c386
   m_configObjects: {}

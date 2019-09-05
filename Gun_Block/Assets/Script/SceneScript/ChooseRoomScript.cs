@@ -20,7 +20,7 @@ public class ChooseRoomScript : MonoBehaviour {
 
     void Start() {
 
-        CuteUDPManager.cuteUDP.emitServer("ShowRoom", ServerDataScript.choosenServerId.ToString());
+        CuteUDPManager.cuteUDP.emitServer(HallEventEnum.ShowRoom.ToString(), ServerDataScript.choosenServerId.ToString());
         
     }
 

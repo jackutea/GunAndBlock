@@ -577,6 +577,8 @@ namespace CuteUDPApp {
                     
                 }
 
+                if (packetHeader.a.Length <= 0) return;
+
                 // 空包，直接触发
                 if (packetHeader.a[0] == 0) {
                     
@@ -599,11 +601,12 @@ namespace CuteUDPApp {
 
                     return;
 
+                } else {
+
+                    // 反馈收到新包头
+                    responseState("1", headerId, ip, port);
+
                 }
-
-                // 反馈收到新包头
-                responseState("1", headerId, ip, port);
-
             }
         }
 
@@ -765,6 +768,8 @@ namespace CuteUDPApp {
                 int headerId = int.Parse(dataString);
 
                 string ipOrSocketId = (sendDic.ContainsKey(sid)) ? sid : ip;
+
+                // Debug.Log("收到反馈码 4 包");
                 
                 Packet existPacket = getCurrentPacket(ipOrSocketId);
 
@@ -820,7 +825,9 @@ namespace CuteUDPApp {
 
             } catch (ThreadAbortException ex) {
 
-                Debug.Log(ex.Message);
+                string msg = ex.Message;
+
+                // Debug.Log(ex.Message);
 
             }
 
